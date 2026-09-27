@@ -12,10 +12,7 @@ import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 /** Extra holding a [io.github.abhik9.caffeinedose.core.Timer.deadline] in intents. */
 internal const val EXTRA_DEADLINE = "io.github.abhik9.caffeinedose.extra.DEADLINE"
 
-/** Extra holding a [io.github.abhik9.caffeinedose.core.Timer.endsAt] in intents. */
-internal const val EXTRA_ENDS_AT = "io.github.abhik9.caffeinedose.extra.ENDS_AT"
-
-internal object SystemDeviceClock : DeviceClock {
+private object SystemDeviceClock : DeviceClock {
     override fun wallMillis() = System.currentTimeMillis()
     override fun elapsedMillis() = SystemClock.elapsedRealtime()
 }

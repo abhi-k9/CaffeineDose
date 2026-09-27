@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -25,8 +24,6 @@ import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 internal class ScreenOverlay(private val context: Context) {
 
     companion object {
-        private const val TAG = "ScreenOverlay"
-
         /**
          * Whether this device is known to ignore the screen wake lock of an app that isn't visible: the screen then only
          * stays on with the overlay. Seen on a Samsung Galaxy S24 Ultra with Android 16.
@@ -69,8 +66,7 @@ internal class ScreenOverlay(private val context: Context) {
             view = overlay
         } catch (e: RuntimeException) {
             // BadTokenException when the permission has just been revoked, or SecurityException on some devices.
-            Log.w(TAG, "Can't show the overlay", e)
-            context.diagnostics.record { "overlay: can't be shown: $e" }
+            context.diagnostics.warn("overlay: can't be shown", e)
         }
     }
 
@@ -81,8 +77,7 @@ internal class ScreenOverlay(private val context: Context) {
             windows.removeView(overlay)
         } catch (e: IllegalArgumentException) {
             // Already removed by the system.
-            Log.w(TAG, "Can't hide the overlay", e)
-            context.diagnostics.record { "overlay: can't be hidden: $e" }
+            context.diagnostics.warn("overlay: can't be hidden", e)
         }
     }
 }

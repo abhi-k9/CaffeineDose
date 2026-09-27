@@ -11,20 +11,17 @@ import android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.text.format.DateFormat
-import android.util.Log
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
-import io.github.abhik9.caffeinedose.system.message
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
+import io.github.abhik9.caffeinedose.system.title
 import io.github.abhik9.caffeinedose.system.toast
 import java.util.Date
-
-private const val TAG = "AwakeTileService"
 
 /** Asks the system to refresh the tile. */
 fun Context.requestTileUpdate() {
@@ -32,8 +29,7 @@ fun Context.requestTileUpdate() {
         TileService.requestListeningState(this, ComponentName(this, AwakeTileService::class.java))
     } catch (e: RuntimeException) {
         // Refused on some devices while the app is in the background: the tile refreshes when it becomes visible anyway.
-        Log.w(TAG, "Tile update refused", e)
-        diagnostics.record { "tile: update refused: $e" }
+        diagnostics.warn("tile: update refused", e)
     }
 }
 
@@ -62,14 +58,14 @@ class AwakeTileService : TileService() {
             tile.subtitle = if (timer == null) {
                 getString(R.string.tile_subtitle)
             } else {
-                getString(R.string.tile_subtitle_running, DateFormat.getTimeFormat(this).format(Date(timer.endsAt)))
+                getString(R.string.until, DateFormat.getTimeFormat(this).format(Date(timer.endsAt)))
             }
         }
         tile.updateTile()
     }
 
     private fun resolve(requirement: Requirement) {
-        toast(requirement.message)
+        toast(requirement.title)
         startSettings(settingsIntent(requirement).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), ::startActivityAndCollapseCompat)
     }
 

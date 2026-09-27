@@ -6,5 +6,5 @@ the Apache License, Version 2.0, itself a rewrite of Sleep Timer (https://github
 Copyright 2020 Simon Marquis, licensed under the Apache License, Version 2.0.
 
 Changes from ZzzTimer: instead of pausing playback when the timer ends, the screen is kept on while the timer runs,
-with a screen wake lock held by a foreground service; new icons, palette and texts; "stop when the screen is turned
-off" setting.
+with a screen wake lock held by a foreground service, and an optional overlay window for devices ignoring it; new
+icons, palette and texts; "stop when the screen is turned off" setting.

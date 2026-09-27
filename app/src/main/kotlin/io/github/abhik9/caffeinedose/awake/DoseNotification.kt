@@ -30,7 +30,7 @@ internal object DoseNotification {
     const val ID = 1
     const val CHANNEL_ID = "dose"
 
-    /** Idempotent: the channel is only created once, and later calls never override the user's choices. */
+    /** Called at every app start: creating an existing channel only updates its texts, never the user's choices. */
     fun createChannel(context: Context) {
         val channel = NotificationChannel(CHANNEL_ID, context.getString(R.string.notification_channel_name), IMPORTANCE_LOW).apply {
             description = context.getString(R.string.notification_channel_description)
@@ -47,7 +47,6 @@ internal object DoseNotification {
     }
 
     fun build(context: Context, timer: Timer): Notification {
-        createChannel(context)
         val settings = SettingsStore.from(context)
         val increment = settings.minutes(DurationSetting.INCREMENT)
         val decrement = settings.minutes(DurationSetting.DECREMENT)
@@ -58,7 +57,7 @@ internal object DoseNotification {
             .setSmallIcon(R.drawable.ic_tile)
             // A title is required for Live Updates: https://developer.android.com/develop/ui/views/notifications/live-update
             .setContentTitle(context.getString(R.string.notification_title))
-            .setSubText(context.getString(R.string.notification_ends_at, DateFormat.getTimeFormat(context).format(Date(timer.endsAt))))
+            .setSubText(context.getString(R.string.until, DateFormat.getTimeFormat(context).format(Date(timer.endsAt))))
             .setShowWhen(true)
             .setWhen(timer.endsAt)
             .setUsesChronometer(true)

@@ -69,7 +69,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             signingConfig = signingConfigs.findByName("release")
         }
         debug {
@@ -120,7 +120,7 @@ tasks.register("printVersionName") {
     doLast { println(versionName) }
 }
 
-// Used by the workflows to find the changelog of the app version: fastlane/metadata/android/en-US/changelogs/<code>.txt
+// Used by the release workflow to find the changelog of the app version: fastlane/metadata/android/en-US/changelogs/<code>.txt
 tasks.register("printVersionCode") {
     val versionCode = versionCodeOf(versionMajor, versionMinor, versionPatch, versionBuild)
     doLast { println(versionCode) }

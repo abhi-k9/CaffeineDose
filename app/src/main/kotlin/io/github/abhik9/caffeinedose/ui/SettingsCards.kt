@@ -9,7 +9,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -66,7 +65,7 @@ private val ThemeMode.label: Int
 @Composable
 internal fun DurationsCard(state: MainUiState, onEdit: (DurationSetting) -> Unit, modifier: Modifier = Modifier) = SettingsCard(modifier) {
     DurationSetting.entries.forEachIndexed { index, setting ->
-        if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        if (index > 0) SettingsDivider()
         val minutes = state.settings.minutes(setting)
         ListItem(
             headlineContent = { Text(stringResource(setting.title)) },
@@ -108,7 +107,7 @@ internal fun AppearanceCard(state: MainUiState, actions: MainActions, modifier: 
         colors = settingsItemColors(),
     )
     if (state.dynamicColorAvailable) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        SettingsDivider()
         SwitchItem(
             title = R.string.dynamic_color_title,
             description = R.string.dynamic_color_description,
@@ -119,25 +118,35 @@ internal fun AppearanceCard(state: MainUiState, actions: MainActions, modifier: 
 }
 
 @Composable
-internal fun BehaviorCard(state: MainUiState, actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
+internal fun BehaviorCard(
+    state: MainUiState,
+    actions: MainActions,
+    onAllowOverlay: () -> Unit,
+    modifier: Modifier = Modifier,
+) = SettingsCard(modifier) {
     SwitchItem(
         title = R.string.stop_on_screen_off_title,
         description = R.string.stop_on_screen_off_description,
         checked = state.settings.stopOnScreenOff,
         onCheckedChange = actions::setStopOnScreenOff,
     )
-    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+    SettingsDivider()
     // A system permission rather than a setting: both ways lead to its settings screen.
     SwitchItem(
         title = R.string.overlay_title,
         description = R.string.overlay_description,
         checked = state.overlayAllowed,
-        onCheckedChange = { actions.allowOverlay() },
+        onCheckedChange = { onAllowOverlay() },
     )
 }
 
 @Composable
-internal fun DiagnosticsCard(state: MainUiState, actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
+internal fun DiagnosticsCard(
+    state: MainUiState,
+    actions: MainActions,
+    onExport: () -> Unit,
+    modifier: Modifier = Modifier,
+) = SettingsCard(modifier) {
     SwitchItem(
         title = R.string.diagnostics_title,
         description = R.string.diagnostics_description,
@@ -147,14 +156,14 @@ internal fun DiagnosticsCard(state: MainUiState, actions: MainActions, modifier:
     // Only once something has been recorded.
     if (state.diagnosticsLogBytes > 0) {
         val size = Formatter.formatShortFileSize(LocalContext.current, state.diagnosticsLogBytes)
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        SettingsDivider()
         ListItem(
             headlineContent = { Text(stringResource(R.string.diagnostics_export)) },
             supportingContent = { Text(stringResource(R.string.diagnostics_export_description, size)) },
             colors = settingsItemColors(),
-            modifier = Modifier.clickable(onClick = actions::exportDiagnostics),
+            modifier = Modifier.clickable(onClick = onExport),
         )
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        SettingsDivider()
         ListItem(
             headlineContent = { Text(stringResource(R.string.diagnostics_clear)) },
             colors = settingsItemColors(),

@@ -1,7 +1,6 @@
 package io.github.abhik9.caffeinedose.ui
 
 import android.os.SystemClock
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,9 +33,11 @@ import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.settings.ThemeMode
+import io.github.abhik9.caffeinedose.system.explanation
+import io.github.abhik9.caffeinedose.system.title
 import io.github.abhik9.caffeinedose.ui.theme.CaffeineDoseTheme
 
-/** User intents of the [MainScreen]. */
+/** User intents of the [MainScreen], implemented by [MainViewModel]. */
 interface MainActions {
     fun start(minutes: Int)
     fun stop()
@@ -47,14 +48,14 @@ interface MainActions {
     fun setDynamicColor(enabled: Boolean)
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
-    fun allowOverlay()
     fun setDiagnosticsEnabled(enabled: Boolean)
-    fun exportDiagnostics()
     fun clearDiagnostics()
-    fun resolve(requirement: Requirement)
 }
 
 /**
+ * @param onResolve asks the user to resolve a [Requirement] (permission prompt or system settings).
+ * @param onAllowOverlay opens the "Display over other apps" system settings.
+ * @param onExportDiagnostics asks the user where to export the diagnostics.
  * @param elapsedNow the `elapsedRealtime` clock, the timeline of [Timer.deadline].
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +63,9 @@ interface MainActions {
 fun MainScreen(
     state: MainUiState,
     actions: MainActions,
+    onResolve: (Requirement) -> Unit,
+    onAllowOverlay: () -> Unit,
+    onExportDiagnostics: () -> Unit,
     modifier: Modifier = Modifier,
     elapsedNow: () -> Long = SystemClock::elapsedRealtime,
 ) {
@@ -87,15 +91,13 @@ fun MainScreen(
             ) {
                 // One warning at a time, in the order they must be resolved.
                 state.missingRequirement?.let { requirement ->
-                    WarningCard(title = requirement.warningTitle, body = requirement.warningBody, onClick = {
-                        actions.resolve(requirement)
-                    })
+                    WarningCard(title = requirement.title, body = requirement.explanation, onClick = { onResolve(requirement) })
                 }
                 if (state.missingRequirement == null && state.overlayNeeded && !state.overlayAllowed) {
                     WarningCard(
                         title = R.string.overlay_warning_title,
                         body = R.string.overlay_warning_body,
-                        onClick = actions::allowOverlay,
+                        onClick = onAllowOverlay,
                     )
                 }
                 TimerCard(state, actions, elapsedNow)
@@ -103,13 +105,13 @@ fun MainScreen(
                 SectionHeader(R.string.section_durations)
                 DurationsCard(state, onEdit = { editing = it })
                 SectionHeader(R.string.section_behavior)
-                BehaviorCard(state, actions)
+                BehaviorCard(state, actions, onAllowOverlay)
                 SectionHeader(R.string.section_appearance)
                 AppearanceCard(state, actions)
                 SectionHeader(R.string.section_automation)
                 AutomationCard(state, actions)
                 SectionHeader(R.string.section_diagnostics)
-                DiagnosticsCard(state, actions)
+                DiagnosticsCard(state, actions, onExportDiagnostics)
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -127,18 +129,6 @@ fun MainScreen(
     }
 }
 
-@get:StringRes
-private val Requirement.warningTitle: Int
-    get() = when (this) {
-        Requirement.NOTIFICATIONS -> R.string.warning_notifications_title
-    }
-
-@get:StringRes
-private val Requirement.warningBody: Int
-    get() = when (this) {
-        Requirement.NOTIFICATIONS -> R.string.warning_notifications_body
-    }
-
 //region Previews
 private object PreviewActions : MainActions {
     override fun start(minutes: Int) = Unit
@@ -150,22 +140,23 @@ private object PreviewActions : MainActions {
     override fun setDynamicColor(enabled: Boolean) = Unit
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
-    override fun allowOverlay() = Unit
     override fun setDiagnosticsEnabled(enabled: Boolean) = Unit
-    override fun exportDiagnostics() = Unit
     override fun clearDiagnostics() = Unit
-    override fun resolve(requirement: Requirement) = Unit
 }
+
+@Composable
+private fun PreviewScreen(state: MainUiState, elapsedNow: () -> Long = { 0L }) =
+    MainScreen(state, PreviewActions, onResolve = {}, onAllowOverlay = {}, onExportDiagnostics = {}, elapsedNow = elapsedNow)
 
 @Preview(name = "Idle")
 @Composable
 private fun IdlePreview() = CaffeineDoseTheme(ThemeMode.LIGHT, dynamicColor = false) {
-    MainScreen(MainUiState(missingRequirement = Requirement.NOTIFICATIONS), PreviewActions)
+    PreviewScreen(MainUiState(missingRequirement = Requirement.NOTIFICATIONS))
 }
 
 @Preview(name = "Running (dark)")
 @Composable
 private fun RunningPreview() = CaffeineDoseTheme(ThemeMode.DARK, dynamicColor = false) {
-    MainScreen(MainUiState(timer = Timer(deadline = 23 * 60_000L + 41_000L, endsAt = 0L)), PreviewActions, elapsedNow = { 0L })
+    PreviewScreen(MainUiState(timer = Timer(deadline = 23 * 60_000L + 41_000L, endsAt = 0L)))
 }
 //endregion

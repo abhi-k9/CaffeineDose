@@ -15,10 +15,8 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.Process
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.abhik9.caffeinedose.EXTRA_DEADLINE
-import io.github.abhik9.caffeinedose.EXTRA_ENDS_AT
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
@@ -45,7 +43,6 @@ import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 class AwakeService : Service() {
 
     companion object {
-        private const val TAG = "AwakeService"
         private const val WAKE_LOCK_TAG = "CaffeineDose:screen"
 
         /** While a timer runs: when the service stops unexpectedly, the diagnostics tell until when it was fine. */
@@ -53,6 +50,9 @@ class AwakeService : Service() {
 
         /** Whether the intent has been sent with `startForegroundService()`, which requires calling `startForeground()`. */
         private const val EXTRA_FOREGROUND = "io.github.abhik9.caffeinedose.extra.FOREGROUND"
+
+        /** Extra holding the [Timer.endsAt] of the requested timer, next to its [EXTRA_DEADLINE]. */
+        private const val EXTRA_ENDS_AT = "io.github.abhik9.caffeinedose.extra.ENDS_AT"
 
         fun intent(context: Context) = Intent(context, AwakeService::class.java)
 
@@ -197,8 +197,7 @@ class AwakeService : Service() {
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service. Nothing
             // can hold the screen reliably without a foreground service.
-            Log.w(TAG, "Foreground service not allowed", e)
-            record { "foreground not allowed: $e" }
+            diagnostics.warn("service: foreground not allowed", e)
             awakeTimer().stop()
         }
     }

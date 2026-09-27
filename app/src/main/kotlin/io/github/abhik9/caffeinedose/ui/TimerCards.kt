@@ -108,7 +108,7 @@ internal fun TimerCard(state: MainUiState, actions: MainActions, elapsedNow: () 
             // Don't read every tick out loud.
             modifier = Modifier.semantics { contentDescription = remainingDescription },
         )
-        Text(stringResource(R.string.timer_ends_at, endsAt), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.until, endsAt), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(16.dp))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),

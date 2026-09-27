@@ -5,211 +5,119 @@
 CaffeineDose keeps your screen on for a set amount of time, then lets it turn off normally again, without changing your
 screen timeout setting.
 
-It is a sibling of [ZzzTimer](https://github.com/abhi-k9/ZzzTimer), and shares its structure: where ZzzTimer acts when
-the timer *ends*, CaffeineDose holds the screen *while* the timer runs (see [NOTICE](NOTICE)).
-
-Download the APK from the [latest release](https://github.com/abhi-k9/CaffeineDose/releases/latest), and see
-[Verifying a download](#verifying-a-download).
+Download it from the [latest release](https://github.com/abhi-k9/CaffeineDose/releases/latest) (see
+[verifying a download](#verifying-a-download)). It is a sibling of [ZzzTimer](https://github.com/abhi-k9/ZzzTimer): where
+ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it runs (see [NOTICE](NOTICE)).
 
 ## Usage
 
-1. Add the CaffeineDose tile to the Quick Settings panel.
-2. Tap the tile to keep the screen on for the default duration, tap it again to stop.
-3. Extend, reduce or stop the timer from its notification. Dismissing the notification (possible since Android 14) also
-   stops the timer, and so does turning the screen off (e.g. with the power button), unless disabled in the settings.
-4. Open the app (launcher icon, notification tap, or long press on the tile) to:
-   - keep the screen on for an exact duration, or pick a preset,
-   - configure the default duration and the `+` / `−` steps,
-   - choose whether turning the screen off stops the timer,
-   - allow *Keep the screen on over other apps*, needed on some phones (see [How it works](#how-it-works)),
-   - choose the theme (System, Light, Dark) and Material You dynamic colors,
-   - allow or forbid other apps to control the timer,
-   - record diagnostics when something goes wrong (see below).
+- **Quick Settings tile**: tap to keep the screen on for the default duration, tap again to stop.
+- **Notification**: extend, reduce or stop the timer. Dismissing it (possible since Android 14) stops the timer, and so
+  does turning the screen off (e.g. with the power button), unless disabled in the settings.
+- **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the
+  default duration and the `+` / `−` steps, the behavior, the theme, automation and diagnostics.
 
 While the screen is kept on, the device doesn't lock automatically either: stop the timer, or turn the screen off,
-before leaving the device unattended.
+before leaving it unattended.
 
-## Diagnostics
-
-When something doesn't behave as expected, turn on **Record diagnostics** in the app settings, reproduce the issue,
-then use **Export log** to save it to a file.
-
-- The log records what the app does and why: timers started, extended or stopped and from where (app, tile,
-  notification, automation), the service lifecycle, the wake lock and the overlay, the screen turning on and off, a
-  heartbeat every 15 seconds while a timer runs, permission changes, and crashes.
-- The export starts with a snapshot of the app and device state: versions, permissions, battery optimizations, standby
-  bucket, screen timeout, settings, the running timer, and why Android ended the app's last processes
-  ([`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)).
-- It contains no personal data, stays in the app's private storage (excluded from backups), is capped at about 512 KB,
-  and only leaves the device when you export it. **Clear log** deletes it.
-- Nothing is recorded while the setting is off, which is the default (debug builds record by default).
-
-This is how the Samsung behavior below was found: with the service in the foreground and its wake lock held, the screen
-still turned off after the usual timeout.
+On some phones, e.g. Samsung, the screen turns off anyway unless *Keep the screen on over other apps* is allowed in the
+app (see [how it works](#how-it-works)).
 
 ## Automation
 
-Tools like [Tasker](https://tasker.joaoapps.com/) or `adb` can control the timer with explicit broadcasts.
-This can be turned off in the app settings.
+Tools like [Tasker](https://tasker.joaoapps.com/) or `adb` can control the timer with explicit broadcasts to
+`io.github.abhik9.caffeinedose/.automation.AutomationReceiver` (`io.github.abhik9.caffeinedose.debug/…` for debug
+builds). This can be turned off in the app settings.
 
-| Action                                           | Effect                                                         |
-|--------------------------------------------------|----------------------------------------------------------------|
-| `io.github.abhik9.caffeinedose.action.START`     | Starts a timer: of `duration` seconds, or the default duration |
-| `io.github.abhik9.caffeinedose.action.UPDATE`    | Adds `duration` seconds (can be negative) to the running timer |
-| `io.github.abhik9.caffeinedose.action.INCREMENT` | Extends the running timer by the configured step               |
-| `io.github.abhik9.caffeinedose.action.DECREMENT` | Reduces the running timer by the configured step               |
-| `io.github.abhik9.caffeinedose.action.TOGGLE`    | Starts the default timer, or stops the running one             |
-| `io.github.abhik9.caffeinedose.action.STOP`      | Stops the running timer                                        |
+| Action (`io.github.abhik9.caffeinedose.action.…`) | Effect                                                         |
+|---------------------------------------------------|----------------------------------------------------------------|
+| `START`                                           | Keeps the screen on for `duration` seconds, or the default     |
+| `UPDATE`                                          | Adds `duration` seconds (can be negative) to the running timer |
+| `INCREMENT` / `DECREMENT`                         | Extends / reduces the running timer by the configured step     |
+| `TOGGLE`                                          | Starts the default timer, or stops the running one             |
+| `STOP`                                            | Stops the running timer                                        |
 
-`duration` is a `long` or `int` extra, in seconds, capped to 24 hours. For example:
+`duration` is a `long` or `int` extra, capped to 24 hours:
 
 ```bash
-# Keep the screen on for 10 minutes
 adb shell am broadcast -n io.github.abhik9.caffeinedose/.automation.AutomationReceiver \
   -a io.github.abhik9.caffeinedose.action.START --el duration 600
-
-# Remove 1 minute
-adb shell am broadcast -n io.github.abhik9.caffeinedose/.automation.AutomationReceiver \
-  -a io.github.abhik9.caffeinedose.action.UPDATE --el duration -60
-
-# Stop
-adb shell am broadcast -n io.github.abhik9.caffeinedose/.automation.AutomationReceiver \
-  -a io.github.abhik9.caffeinedose.action.STOP
 ```
 
-Debug builds use the `io.github.abhik9.caffeinedose.debug` package: adjust the component name (`-n`) accordingly.
+Since Android 12, starting a timer while the app is in the background may be refused (a toast says so): turning off
+battery optimization for CaffeineDose lifts this restriction. Changing or stopping a running timer always works.
 
-Since Android 12, apps can't start a foreground service from the background: starting a timer from automation while the
-app is in the background may be refused (a toast says so). Turning off battery optimization for CaffeineDose
-(Settings → Apps → CaffeineDose → Battery → Unrestricted) lifts this restriction. Changing or stopping a running timer
-always works.
+## Diagnostics
+
+To investigate an issue, turn on **Record diagnostics** in the app settings, reproduce it, then **Export log** to a file.
+The log records what the app does and why (timer operations and where they come from, the service, wake lock and
+overlay, the screen turning on and off, a heartbeat while a timer runs, permissions, crashes), and the export starts with
+a snapshot of the app and device state. It is off by default (on in debug builds), capped at about 512 KB, and never
+leaves the device unless exported (see the [privacy policy](PRIVACY.md)).
 
 ## How it works
 
-`FLAG_KEEP_SCREEN_ON`, the recommended way to keep the screen on, only works while one of the app's own windows is
-visible. To keep the screen on over other apps, a foreground service holds a (deprecated, but still supported)
-[`SCREEN_BRIGHT_WAKE_LOCK`](https://developer.android.com/reference/android/os/PowerManager#SCREEN_BRIGHT_WAKE_LOCK).
-No foreground service type describes this use, so the service uses the
-[`specialUse`](https://developer.android.com/develop/background-work/services/fgs/service-types#special-use) type,
-which has no time limit.
+- `FLAG_KEEP_SCREEN_ON` only works while one of the app's windows is visible. To keep the screen on over other apps, a
+  foreground service ([`specialUse`](https://developer.android.com/develop/background-work/services/fgs/service-types#special-use)
+  type, without time limit) holds a deprecated but still supported
+  [`SCREEN_BRIGHT_WAKE_LOCK`](https://developer.android.com/reference/android/os/PowerManager#SCREEN_BRIGHT_WAKE_LOCK).
+- Some devices ignore that wake lock while the app isn't visible (seen on a Samsung Galaxy S24 Ultra with Android 16).
+  With the optional *Display over other apps* permission, the service also shows an invisible, untouchable 1×1 window
+  with [`FLAG_KEEP_SCREEN_ON`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON),
+  which the window manager always honors.
+- The service is the timer's source of truth: the timer, the wake lock and the window only live in its process's memory.
+  Nothing is persisted, so the screen can never stay on by accident after a crash or a reboot.
+- The deadline is tracked on the monotonic `elapsedRealtime` clock: changing the time or time zone doesn't affect it.
+  The wake lock times out at the deadline as a safety net, and is released with
+  [`ON_AFTER_RELEASE`](https://developer.android.com/reference/android/os/PowerManager#ON_AFTER_RELEASE): the screen then
+  turns off after the usual timeout, instead of right away.
+- Where a tile isn't allowed to start a foreground service, it starts it from an invisible activity instead.
 
-Some devices ignore that wake lock while the app isn't visible: on a Samsung Galaxy S24 Ultra with Android 16, the screen
-turns off after the usual timeout while the lock is held. The window manager, though, always honors
-[`FLAG_KEEP_SCREEN_ON`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON)
-on a visible window, which is how video players keep the screen on. With the optional *Display over other apps*
-permission, the service also shows an invisible, untouchable 1×1 window with that flag while a timer runs.
-
-The service is the source of truth of the timer: the timer exists only while the service holds the wake lock, both live
-in memory in the same process, and nothing is persisted. If the process dies, the wake lock and the window are gone
-with it: the screen can never stay on by accident, and there is nothing to clean up after a crash or a reboot.
-
-The end of the timer is tracked on the monotonic `elapsedRealtime` clock, so changing the time or the time zone doesn't
-affect a running timer. The wake lock is acquired with a timeout matching the remaining time, as a safety net. When the
-timer ends, the lock is released with
-[`ON_AFTER_RELEASE`](https://developer.android.com/reference/android/os/PowerManager#ON_AFTER_RELEASE): the screen then
-turns off after the usual screen timeout, instead of right away.
-
-The Quick Settings tile starts the service directly. On devices that don't allow a tile to start a foreground service,
-it falls back to an invisible, non-exported activity that starts it from the foreground.
-
-Since Android 16 QPR2, the notification is displayed as a
-[Live Update](https://developer.android.com/develop/ui/views/notifications/live-update).
-
-## Project structure
-
-| Module  | Content                                                                                                        |
-|---------|----------------------------------------------------------------------------------------------------------------|
-| `:core` | Pure Kotlin: the timer logic (`AwakeTimer`), settings and time helpers. Unit tested on the JVM.                |
-| `:app`  | Android adapters (foreground service and wake lock, notification, tile, receivers) and the Jetpack Compose UI. |
-
-`:core` defines small interfaces (`ScreenKeeper`, `DeviceClock`) that `:app` implements with the platform APIs.
+The `:core` module holds the logic in pure Kotlin, unit tested on the JVM: `AwakeTimer`, the settings, durations and the
+automation API. It defines small interfaces (`ScreenKeeper`, `DeviceClock`, `EventLog`) that `:app` implements with the
+platform APIs, next to the Jetpack Compose UI.
 
 ## Building
 
-Requirements: JDK 17 or newer, and the Android SDK (API 37).
+Requires JDK 17+ and the Android SDK (API 37). `./gradlew assembleDebug test lint` builds, tests and lints (lint and
+Kotlin warnings are errors); CI also runs [ktlint](https://pinterest.github.io/ktlint/) and
+[zizmor](https://docs.zizmor.sh/) on every push. The [device test](.github/workflows/device-test.yml) (Actions → Device
+test → Run workflow) checks on an emulator, second by second, that the screen really stays on, then is released;
+[its script](.github/scripts/device-test.sh) also runs against a connected device.
 
-```bash
-./gradlew assembleDebug    # debug APK
-./gradlew :core:test       # unit tests
-./gradlew lint             # Android lint (warnings are errors)
-```
+Release builds are signed only when a signing configuration is provided. Never commit keystores or passwords:
 
-CI runs these on every push and pull request. The [device test](.github/workflows/device-test.yml) runs on demand
-(Actions → Device test → Run workflow, with an API level): it installs the debug app on an emulator and checks, second by
-second, that the screen stays on while a timer runs, from the app, the tile, until it expires and with the overlay, then
-that everything is released. The same script works on a connected device: `.github/scripts/device-test.sh <debug APK>`.
-
-Release builds are minified. They are signed only when a signing configuration is provided, as Gradle properties
-(e.g. in `~/.gradle/gradle.properties`) or environment variables — never commit keystores or passwords:
-
-| Gradle property                  | Environment variable                 |
-|----------------------------------|--------------------------------------|
-| `caffeinedose.signing.storeFile`     | `CAFFEINEDOSE_SIGNING_STORE_FILE`        |
-| `caffeinedose.signing.storePassword` | `CAFFEINEDOSE_SIGNING_STORE_PASSWORD`    |
-| `caffeinedose.signing.keyAlias`      | `CAFFEINEDOSE_SIGNING_KEY_ALIAS`         |
-| `caffeinedose.signing.keyPassword`   | `CAFFEINEDOSE_SIGNING_KEY_PASSWORD`      |
+| Gradle property (`caffeinedose.signing.…`) | Environment variable                  | Release workflow secret                              |
+|--------------------------------------------|---------------------------------------|------------------------------------------------------|
+| `storeFile`                                | `CAFFEINEDOSE_SIGNING_STORE_FILE`     | `CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64` (base64 file) |
+| `storePassword`                            | `CAFFEINEDOSE_SIGNING_STORE_PASSWORD` | `CAFFEINEDOSE_SIGNING_STORE_PASSWORD`                |
+| `keyAlias`                                 | `CAFFEINEDOSE_SIGNING_KEY_ALIAS`      | `CAFFEINEDOSE_SIGNING_KEY_ALIAS`                     |
+| `keyPassword`                              | `CAFFEINEDOSE_SIGNING_KEY_PASSWORD`   | `CAFFEINEDOSE_SIGNING_KEY_PASSWORD`                  |
 
 ## Releasing
 
-1. Bump the version in `app/build.gradle.kts` on `main`, and add its changelog as
-   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (`./gradlew -q :app:printVersionCode` prints the
-   version code). CI checks that it exists, and the release notes start with it.
-2. Run the [release workflow](.github/workflows/release.yml) on `main` (Actions → Release → Run workflow), which creates
-   the `vX.Y.Z` tag. Alternatively, push that tag yourself: it must point to a commit of `main`.
+Bump the version in `app/build.gradle.kts` on `main`, and add its changelog as
+`fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (`./gradlew -q :app:printVersionCode`). Then run the
+[release workflow](.github/workflows/release.yml) on `main` (Actions → Release → Run workflow). It creates the `vX.Y.Z`
+tag, builds from scratch, tests, lints, signs, checks the signing certificate, attests the build provenance, and
+publishes the APK with its checksum, with the changelog as release notes. Pushing a tag that points to `main` works too.
 
-The workflow builds the app from scratch (no shared build cache), runs the tests and lint, signs the APK, checks that it
-is signed with the expected certificate, attests its build provenance, and publishes it with its SHA-256 checksum as a
-GitHub Release. It runs in the `release` environment: protection rules such as required reviewers can be added to it in
-Settings → Environments.
-
-It requires these repository (or `release` environment) secrets, in Settings → Secrets and variables → Actions:
-
-| Secret                                 | Value                                |
-|----------------------------------------|--------------------------------------|
-| `CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64` | The release keystore, base64 encoded |
-| `CAFFEINEDOSE_SIGNING_STORE_PASSWORD`  | The keystore password                |
-| `CAFFEINEDOSE_SIGNING_KEY_ALIAS`       | The key alias                        |
-| `CAFFEINEDOSE_SIGNING_KEY_PASSWORD`    | The key password                     |
-
-It also requires the `CAFFEINEDOSE_SIGNING_CERT_SHA256` repository (or `release` environment) **variable**: the SHA-256
-digest of the signing certificate, as printed by `apksigner verify --print-certs` or `keytool -list -v`. The workflow
-checks it before building, and refuses to publish an APK signed with any other key.
-
-A keystore can be created once with `keytool`, or the ZzzTimer one reused. Keep it and its passwords safe: every future
-update must be signed with the same key.
+The workflow runs in the `release` environment, which can hold the secrets and protection rules (Settings →
+Environments). The keystore is created once, and every update must be signed with it; if it ever changes, update
+`SIGNING_CERT_SHA256` in the workflow:
 
 ```bash
 keytool -genkeypair -keystore caffeinedose-release.jks -alias caffeinedose -keyalg RSA -keysize 4096 -validity 10000
-base64 -w 0 caffeinedose-release.jks   # value of CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64 (macOS: base64 -i caffeinedose-release.jks)
+base64 -w 0 caffeinedose-release.jks   # macOS: base64 -i caffeinedose-release.jks
 ```
 
 ### Verifying a download
 
-- Its signing certificate can be checked with `apksigner verify --print-certs`, AppVerifier or Obtainium, against the
-  SHA-256 digest listed in the release notes.
-- It was built by this repository's release workflow:
-  ```bash
-  gh attestation verify CaffeineDose-vX.Y.Z.apk --repo abhi-k9/CaffeineDose
-  ```
-- Its SHA-256 checksum is published next to it: `sha256sum --check CaffeineDose-vX.Y.Z.apk.sha256`
-
-## Privacy
-
-CaffeineDose has no Internet permission and collects no data, see the [privacy policy](PRIVACY.md).
+- Signing certificate (SHA-256), checked by `apksigner verify --print-certs`, AppVerifier or Obtainium:
+  `60:C2:8A:EE:88:92:3D:9C:68:96:E0:DE:BE:AE:30:AF:00:F2:9E:FA:94:90:E9:18:1E:2F:82:11:A1:84:8F:34`
+- Build provenance: `gh attestation verify CaffeineDose-vX.Y.Z.apk --repo abhi-k9/CaffeineDose`
+- Checksum: `sha256sum --check CaffeineDose-vX.Y.Z.apk.sha256`
 
 ## License
 
-    Copyright 2020 Simon Marquis
-    Copyright 2026 abhi-k9
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+[Apache License 2.0](LICENSE). No Internet permission, no data collected: see the [privacy policy](PRIVACY.md).

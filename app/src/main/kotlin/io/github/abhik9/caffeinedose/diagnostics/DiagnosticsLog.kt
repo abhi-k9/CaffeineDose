@@ -50,6 +50,12 @@ class DiagnosticsLog private constructor(private val dir: File, private val isEn
         writer.execute { append(line) }
     }
 
+    /** Something went wrong but is handled: logged to Logcat, and recorded. */
+    fun warn(message: String, error: Throwable? = null) {
+        Log.w(TAG, message, error)
+        record { if (error == null) message else "$message: $error" }
+    }
+
     /** Records synchronously, e.g. right before the process dies after a crash. */
     fun recordNow(message: () -> String) {
         if (!isEnabled()) return

@@ -1,15 +1,15 @@
 <resources>
     <string name="app_name">CaffeineDose</string>
+    <!-- When the running timer ends: tile, notification and app -->
+    <string name="until">Until %1$s</string>
 
     <!-- Quick Settings tile -->
     <string name="tile_subtitle">Tap to keep awake</string>
-    <string name="tile_subtitle_running">Until %1$s</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">Screen kept on</string>
     <string name="notification_channel_description">Shows how long the screen stays on, and lets you extend, reduce or stop it.</string>
     <string name="notification_title">Screen stays on</string>
-    <string name="notification_ends_at">Until %1$s</string>
 
     <!-- Timer actions -->
     <string name="action_extend">+%1$d min</string>
@@ -23,7 +23,6 @@
     <string name="timer_idle_body">Keep the screen on for a while below, or from the Quick Settings tile.</string>
     <string name="timer_remaining">Screen stays on for</string>
     <string name="timer_remaining_description">%1$s left</string>
-    <string name="timer_ends_at">Until %1$s</string>
     <string name="start_timer_title">Keep the screen on</string>
     <string name="start_timer_title_running">Change the duration</string>
     <string name="unit_minutes">min</string>
@@ -68,9 +67,8 @@
     <string name="automation_description">Lets tools like Tasker start, change or stop the timer.</string>
 
     <!-- Missing permissions -->
-    <string name="warning_notifications_title">Notifications are off</string>
-    <string name="warning_notifications_body">The screen is only kept on while a notification shows it: it can’t start without it.</string>
+    <string name="requirement_notifications_title">Notifications are off</string>
+    <string name="requirement_notifications_explanation">The screen is only kept on while a notification shows it: it can’t start without it.</string>
     <string name="warning_action">Allow</string>
-    <string name="requirement_notifications_toast">CaffeineDose needs the Notifications permission.</string>
     <string name="refused_toast">Android didn’t let CaffeineDose start from the background. Open the app, or turn off battery optimization for it.</string>
 </resources>

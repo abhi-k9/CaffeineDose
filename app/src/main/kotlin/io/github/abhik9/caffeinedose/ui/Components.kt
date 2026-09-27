@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +48,10 @@ internal fun SettingsCard(modifier: Modifier = Modifier, content: @Composable Co
 
 @Composable
 internal fun settingsItemColors(): ListItemColors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+
+@Composable
+internal fun SettingsDivider(modifier: Modifier = Modifier) =
+    HorizontalDivider(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainerHigh)
 
 @Composable
 internal fun WarningCard(@StringRes title: Int, @StringRes body: Int, onClick: () -> Unit, modifier: Modifier = Modifier) = Card(

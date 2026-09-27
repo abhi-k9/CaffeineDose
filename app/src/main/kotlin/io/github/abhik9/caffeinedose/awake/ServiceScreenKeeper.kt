@@ -1,7 +1,6 @@
 package io.github.abhik9.caffeinedose.awake
 
 import android.content.Context
-import android.util.Log
 import io.github.abhik9.caffeinedose.core.ScreenKeeper
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
@@ -26,10 +25,6 @@ internal object AwakeState {
  */
 internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper {
 
-    private companion object {
-        const val TAG = "ServiceScreenKeeper"
-    }
-
     override fun isAvailable() = DoseNotification.isAvailable(context)
 
     override fun current(): Timer? = AwakeState.timer
@@ -51,8 +46,7 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException since Android 12, or background start restrictions: e.g. an
             // automation intent received while the app is in the background.
-            Log.w(TAG, "Not allowed to hold the screen", e)
-            context.diagnostics.record { "keeper: not allowed to hold the screen: $e" }
+            context.diagnostics.warn("keeper: not allowed to hold the screen", e)
             AwakeState.timer = previous
             false
         }
