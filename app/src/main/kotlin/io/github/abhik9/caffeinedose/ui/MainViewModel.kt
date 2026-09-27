@@ -12,6 +12,7 @@ import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
+import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 import io.github.abhik9.caffeinedose.settings.UserSettings
@@ -77,17 +78,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshes.tryEmit(Unit)
     }
 
-    private inline fun <T> update(operation: () -> T): T = operation().also { refresh() }
+    private inline fun <T> update(name: String, operation: () -> T): T = operation().also {
+        Diagnostics.log(getApplication<Application>(), "MainViewModel", "App: $name -> $it")
+        refresh()
+    }
 
-    fun start(minutes: Int): StartResult = update { timer.start(minutes.minutes) }
+    fun start(minutes: Int): StartResult = update("start $minutes min") { timer.start(minutes.minutes) }
 
-    fun stop() = update { timer.stop() }
+    fun stop() = update("stop") { timer.stop() }
 
-    fun extend(): StartResult? = update { timer.extend() }
+    fun extend(): StartResult? = update("extend") { timer.extend() }
 
-    fun reduce(): StartResult? = update { timer.reduce() }
+    fun reduce(): StartResult? = update("reduce") { timer.reduce() }
 
-    fun setMinutes(setting: DurationSetting, minutes: Int): StartResult? = update {
+    fun setMinutes(setting: DurationSetting, minutes: Int): StartResult? = update("set $setting to $minutes min") {
         settings.setMinutes(setting, minutes)
         // Refresh the notification actions ("+N", "−N") of a running timer.
         if (setting != DurationSetting.INITIAL) timer.refresh() else null

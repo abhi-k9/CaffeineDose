@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.os.Process
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -20,6 +21,7 @@ import io.github.abhik9.caffeinedose.EXTRA_DEADLINE
 import io.github.abhik9.caffeinedose.EXTRA_ENDS_AT
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Timer
+import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 
@@ -44,6 +46,9 @@ class AwakeService : Service() {
         private const val TAG = "AwakeService"
         private const val WAKE_LOCK_TAG = "CaffeineDose:screen"
 
+        /** While a timer runs: when the service stops unexpectedly, the diagnostics tell until when it was fine. */
+        private const val HEARTBEAT_MS = 15_000L
+
         /** Whether the intent has been sent with `startForegroundService()`, which requires calling `startForeground()`. */
         private const val EXTRA_FOREGROUND = "io.github.abhik9.caffeinedose.extra.FOREGROUND"
 
@@ -62,6 +67,15 @@ class AwakeService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private val check = Runnable(::update)
+    private val heartbeat: Runnable = object : Runnable {
+        override fun run() {
+            val timer = held ?: return
+            val remaining = (timer.deadline - SystemClock.elapsedRealtime()) / 1000
+            val interactive = getSystemService(PowerManager::class.java).isInteractive
+            log("Heartbeat: lock held ${wakeLock.isHeld}, screen interactive $interactive, ${remaining}s left")
+            handler.postDelayed(this, HEARTBEAT_MS)
+        }
+    }
 
     private lateinit var wakeLock: PowerManager.WakeLock
 
@@ -76,13 +90,13 @@ class AwakeService : Service() {
                 // Ends whichever timer is running, even one this service has not applied yet.
                 Intent.ACTION_SCREEN_OFF -> {
                     val stop = AwakeState.timer != null && SettingsStore.from(context).stopOnScreenOff
-                    Log.i(TAG, "Screen off, stopping: $stop")
+                    log("Screen off, stopping: $stop")
                     if (stop) awakeTimer().stop()
                 }
 
                 // The handler may have been delayed by deep sleep while the screen was off: catch up.
                 Intent.ACTION_SCREEN_ON -> {
-                    Log.i(TAG, "Screen on")
+                    log("Screen on")
                     update()
                 }
             }
@@ -91,10 +105,12 @@ class AwakeService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun log(message: String) = Diagnostics.log(this, TAG, message)
+
     @Suppress("DEPRECATION")
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "Created")
+        log("Created in process ${Process.myPid()}")
         // ON_AFTER_RELEASE: once released, the screen stays on for the usual timeout instead of turning off at once.
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, WAKE_LOCK_TAG)
@@ -110,7 +126,7 @@ class AwakeService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         lastStartId = startId
         val foregroundRequired = intent?.getBooleanExtra(EXTRA_FOREGROUND, false) == true
-        Log.i(TAG, "Started #$startId, foreground required: $foregroundRequired, in foreground: $inForeground")
+        log("Started #$startId, foreground required: $foregroundRequired, in foreground: $inForeground")
         if (foregroundRequired) AwakeState.pendingForegroundStarts = (AwakeState.pendingForegroundStarts - 1).coerceAtLeast(0)
         // Required right away after `startForegroundService()`, even if the timer has been released since: stopping
         // before would crash the app. The notification shows the requested timer until update() applies the current one.
@@ -132,13 +148,13 @@ class AwakeService : Service() {
         val timer = AwakeState.timer
         if (timer == null) {
             // Released in the meantime. A later start (a new timer) keeps the service running.
-            Log.i(TAG, "No timer, stopping #$lastStartId")
+            log("No timer, stopping #$lastStartId")
             stopSelf(lastStartId)
             return
         }
         // Stops this service through the keeper.
         if (awakeTimer().expireIfDue()) {
-            Log.i(TAG, "Expired")
+            log("Expired")
             return
         }
         if (timer != held) {
@@ -150,7 +166,9 @@ class AwakeService : Service() {
         // Timeouts don't elapse in deep sleep, hence the check on ACTION_SCREEN_ON.
         wakeLock.acquire(remaining)
         handler.postDelayed(check, remaining)
-        Log.i(TAG, "Holding the screen for ${remaining}ms")
+        handler.removeCallbacks(heartbeat)
+        handler.postDelayed(heartbeat, HEARTBEAT_MS)
+        log("Holding the screen for ${remaining}ms")
     }
 
     private fun enterForeground(timer: Timer) {
@@ -163,18 +181,20 @@ class AwakeService : Service() {
                 startForeground(DoseNotification.ID, notification)
             }
             inForeground = true
-            Log.i(TAG, "In the foreground")
+            log("In the foreground")
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service. Nothing
             // can hold the screen reliably without a foreground service.
             Log.w(TAG, "Foreground service not allowed", e)
+            log("Foreground service not allowed: $e")
             awakeTimer().stop()
         }
     }
 
     override fun onDestroy() {
-        Log.i(TAG, "Destroyed, lock held: ${wakeLock.isHeld}, timer: ${AwakeState.timer}, held: $held")
+        log("Destroyed, lock held: ${wakeLock.isHeld}, timer: ${AwakeState.timer}, held: $held")
         handler.removeCallbacks(check)
+        handler.removeCallbacks(heartbeat)
         if (wakeLock.isHeld) wakeLock.release()
         unregisterReceiver(screenReceiver)
         // Stopped by the system rather than by the keeper: don't report a timer that nothing holds anymore. A newer timer

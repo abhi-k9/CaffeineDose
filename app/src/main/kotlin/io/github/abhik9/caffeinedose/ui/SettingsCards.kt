@@ -127,6 +127,22 @@ internal fun BehaviorCard(state: MainUiState, actions: MainActions, modifier: Mo
 }
 
 @Composable
+internal fun DiagnosticsCard(actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.diagnostics_share_title)) },
+        supportingContent = { Text(stringResource(R.string.diagnostics_share_description)) },
+        colors = settingsItemColors(),
+        modifier = Modifier.clickable(onClick = actions::shareDiagnostics),
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.diagnostics_clear_title)) },
+        colors = settingsItemColors(),
+        modifier = Modifier.clickable(onClick = actions::clearDiagnostics),
+    )
+}
+
+@Composable
 internal fun AutomationCard(state: MainUiState, actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
     SwitchItem(
         title = R.string.automation_title,

@@ -8,6 +8,9 @@ CaffeineDose is an open source app, provided free of charge and as is.
 - It contains no analytics, advertising, or crash reporting library.
 - Your settings (durations, behavior, theme, automation preference) are stored locally on your device, and are excluded
   from backups and device transfers. Uninstalling the app deletes them.
+- The app keeps a short diagnostics log on your device (when timers start and stop, and why Android last stopped the
+  app), with your device model and Android version. It is only sent somewhere if you choose *Share diagnostics*, to the
+  app you pick. *Clear diagnostics* or uninstalling the app deletes it.
 
 Permissions the app requests, and why:
 

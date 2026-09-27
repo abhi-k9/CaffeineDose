@@ -49,6 +49,13 @@
     <string name="dynamic_color_title">Dynamic colors</string>
     <string name="dynamic_color_description">Use colors from your wallpaper</string>
 
+    <string name="section_diagnostics">Diagnostics</string>
+    <string name="diagnostics_share_title">Share diagnostics</string>
+    <string name="diagnostics_share_description">What the app did recently, and why Android last stopped it. It stays on this device unless you share it.</string>
+    <string name="diagnostics_clear_title">Clear diagnostics</string>
+    <string name="diagnostics_cleared">Diagnostics cleared</string>
+    <string name="diagnostics_subject">CaffeineDose diagnostics</string>
+
     <string name="section_automation">Automation</string>
     <string name="automation_title">Allow other apps to control the timer</string>
     <string name="automation_description">Lets tools like Tasker start, change or stop the timer.</string>

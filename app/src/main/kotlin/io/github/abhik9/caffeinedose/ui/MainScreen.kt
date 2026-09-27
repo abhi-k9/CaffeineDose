@@ -47,6 +47,8 @@ interface MainActions {
     fun setDynamicColor(enabled: Boolean)
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
+    fun shareDiagnostics()
+    fun clearDiagnostics()
     fun resolve(requirement: Requirement)
 }
 
@@ -97,6 +99,8 @@ fun MainScreen(
                 AppearanceCard(state, actions)
                 SectionHeader(R.string.section_automation)
                 AutomationCard(state, actions)
+                SectionHeader(R.string.section_diagnostics)
+                DiagnosticsCard(actions)
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -137,6 +141,8 @@ private object PreviewActions : MainActions {
     override fun setDynamicColor(enabled: Boolean) = Unit
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
+    override fun shareDiagnostics() = Unit
+    override fun clearDiagnostics() = Unit
     override fun resolve(requirement: Requirement) = Unit
 }
 

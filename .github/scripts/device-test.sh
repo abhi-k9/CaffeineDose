@@ -22,9 +22,27 @@ device() { adb shell "$@" | tr -d '\r'; }
 wakefulness() { device dumpsys power | sed -n 's/^ *mWakefulness=//p' | head -n 1; }
 
 wake() {
-  device input keyevent KEYCODE_WAKEUP
-  device wm dismiss-keyguard || true
+  for _ in 1 2 3 4 5; do
+    device input keyevent KEYCODE_WAKEUP
+    device wm dismiss-keyguard || true
+    sleep 1
+    if [ "$(wakefulness)" = Awake ]; then return; fi
+  done
+  echo "Could not wake the device up" >&2
+}
+
+# Active wake locks only: the dump also lists the history of the wake locks.
+held_lock() {
+  device dumpsys power | awk '/Wake Locks: size=/ { f = 1; next } f && /^ *$/ { exit } f' | grep "CaffeineDose:screen" | head -n 1 | sed 's/^ *//'
+}
+
+click_tile() {
+  # The tile must be visible to be clicked.
+  device cmd statusbar expand-settings
+  sleep 2
+  device cmd statusbar click-tile "$tile"
   sleep 1
+  device cmd statusbar collapse
 }
 
 automation() { # <action> [duration in seconds]
@@ -41,7 +59,7 @@ sample() { # <scenario> <seconds> <expectation>
   start=$(date +%s)
   while now=$(date +%s); [ $((now - start)) -lt "$seconds" ]; do
     state=$(wakefulness)
-    lock=$(device dumpsys power | grep "CaffeineDose:screen" | head -n 1 | sed 's/^ *//' || true)
+    lock=$(held_lock || true)
     pid=$(device pidof "$pkg" || true)
     foreground=$(device dumpsys activity services "$pkg" | grep -c "isForeground=true" || true)
     notification=$(device dumpsys notification | grep -c "pkg=$pkg" || true)
@@ -98,12 +116,9 @@ sample app-stopped 40 free
 
 # Started from the Quick Settings tile: the user's second scenario.
 wake
-device cmd statusbar click-tile "$tile"
-sleep 1
-device cmd statusbar collapse
+click_tile
 sample tile 75 held
-device cmd statusbar click-tile "$tile"
-device cmd statusbar collapse
+click_tile
 sample tile-stopped 40 free
 
 # A timer that ends: the screen is held until then, then turns off after the usual timeout.
