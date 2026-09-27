@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: jobs only read the repository, unless stated otherwise.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  zizmor:
+    name: Workflow security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Audits the GitHub Actions workflows and the Dependabot configuration.
+      - uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: 1.30.1
+          advanced-security: false
+          annotations: true
+
+  ktlint:
+    name: Kotlin style
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KTLINT_VERSION: 1.8.0
+      KTLINT_SHA256: 369ad2b789f95a011f807e1fcb690ccef80bd7cd014fd139e73ae82dcc0baeab
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: ktlint
+        run: |
+          curl -sSfL -o ktlint.jar "https://repo1.maven.org/maven2/com/pinterest/ktlint/ktlint-cli/$KTLINT_VERSION/ktlint-cli-$KTLINT_VERSION-all.jar"
+          echo "$KTLINT_SHA256  ktlint.jar" | sha256sum --check --strict
+          java -jar ktlint.jar --relative "**/*.kt" "**/*.kts"
+
+  build:
+    name: Build, test & lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # Actions are pinned by commit SHA; Dependabot keeps them up to date.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+
+      # Also validates the Gradle wrapper checksum.
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          # The MIT licensed cache implementation, instead of the default proprietary one.
+          cache-provider: basic
+
+      - name: Build, test & lint
+        run: ./gradlew assembleDebug assembleRelease :core:test lint --stacktrace --warning-mode all
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          archive: false
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/test-results/**/TEST-*.xml
+          if-no-files-found: ignore
+
+  # Submits the resolved Gradle dependencies (transitive ones included) to GitHub, for Dependabot security alerts.
+  dependency-graph:
+    name: Dependency graph
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # submit the dependency graph
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic

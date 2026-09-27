@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Live Updates, since Android 16 QPR2. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- The screen wake lock is held by a foreground service, see AwakeService.kt -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CaffeineDose"
+        tools:targetApi="31">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Long press on the Quick Settings tile. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
+        </activity>
+
+        <!-- Invisible: starts the default timer from the foreground when the tile is not allowed to. Not exported. -->
+        <activity
+            android:name=".tile.StartActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service
+            android:name=".tile.AwakeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
+        <!-- No foreground service type fits "keep the screen on": specialUse, which has no time limit. -->
+        <service
+            android:name=".awake.AwakeService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the screen on for a duration chosen by the user, then lets it turn off normally." />
+        </service>
+
+        <!-- Notification actions: only reachable through the app's own PendingIntents. -->
+        <receiver
+            android:name=".awake.DoseActionReceiver"
+            android:exported="false" />
+
+        <!-- Public automation API (Tasker, adb…), documented in the README. It can be disabled from the app settings. -->
+        <receiver
+            android:name=".automation.AutomationReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="io.github.abhik9.caffeinedose.action.START" />
+                <action android:name="io.github.abhik9.caffeinedose.action.STOP" />
+                <action android:name="io.github.abhik9.caffeinedose.action.TOGGLE" />
+                <action android:name="io.github.abhik9.caffeinedose.action.UPDATE" />
+                <action android:name="io.github.abhik9.caffeinedose.action.INCREMENT" />
+                <action android:name="io.github.abhik9.caffeinedose.action.DECREMENT" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

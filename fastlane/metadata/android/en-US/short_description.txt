@@ -1,0 +1,1 @@
+Keep the screen on for a set time, from a Quick Settings tile.

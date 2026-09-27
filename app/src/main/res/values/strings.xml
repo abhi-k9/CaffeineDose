@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">CaffeineDose</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_subtitle">Tap to keep awake</string>
+    <string name="tile_subtitle_running">Until %1$s</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Screen kept on</string>
+    <string name="notification_channel_description">Shows how long the screen stays on, and lets you extend, reduce or stop it.</string>
+    <string name="notification_title">Screen stays on</string>
+    <string name="notification_ends_at">Until %1$s</string>
+
+    <!-- Timer actions -->
+    <string name="action_extend">+%1$d min</string>
+    <string name="action_reduce">−%1$d min</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_start">Keep awake for %1$s</string>
+    <string name="action_set">Set to %1$s</string>
+
+    <!-- Main screen -->
+    <string name="timer_idle_title">Screen timeout is normal</string>
+    <string name="timer_idle_body">Keep the screen on for a while below, or from the Quick Settings tile.</string>
+    <string name="timer_remaining">Screen stays on for</string>
+    <string name="timer_remaining_description">%1$s left</string>
+    <string name="timer_ends_at">Until %1$s</string>
+    <string name="start_timer_title">Keep the screen on</string>
+    <string name="start_timer_title_running">Change the duration</string>
+    <string name="unit_minutes">min</string>
+
+    <string name="section_durations">Durations</string>
+    <string name="settings_initial">Default duration</string>
+    <string name="settings_initial_description">Used by the Quick Settings tile</string>
+    <string name="settings_increment">Extend by</string>
+    <string name="settings_increment_description">The “+” button</string>
+    <string name="settings_decrement">Reduce by</string>
+    <string name="settings_decrement_description">The “−” button</string>
+    <string name="settings_range">From %1$s to %2$s</string>
+
+    <string name="section_behavior">Behavior</string>
+    <string name="stop_on_screen_off_title">Stop when the screen is turned off</string>
+    <string name="stop_on_screen_off_description">Turning the screen off, e.g. with the power button, ends the timer.</string>
+
+    <string name="section_appearance">Appearance</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="dynamic_color_title">Dynamic colors</string>
+    <string name="dynamic_color_description">Use colors from your wallpaper</string>
+
+    <string name="section_automation">Automation</string>
+    <string name="automation_title">Allow other apps to control the timer</string>
+    <string name="automation_description">Lets tools like Tasker start, change or stop the timer.</string>
+
+    <!-- Missing permissions -->
+    <string name="warning_notifications_title">Notifications are off</string>
+    <string name="warning_notifications_body">The screen is only kept on while a notification shows it: it can’t start without it.</string>
+    <string name="warning_action">Allow</string>
+    <string name="requirement_notifications_toast">CaffeineDose needs the Notifications permission.</string>
+    <string name="refused_toast">Android didn’t let CaffeineDose start from the background. Open the app, or turn off battery optimization for it.</string>
+</resources>

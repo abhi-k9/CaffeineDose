@@ -1,0 +1,4 @@
+<resources>
+    <!-- Window theme displayed until Compose draws: the UI itself is themed by CaffeineDoseTheme. -->
+    <style name="Theme.CaffeineDose" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,11 @@
+CaffeineDose keeps your screen on for as long as you choose, then lets it turn off normally again. Handy for reading a recipe, following a map or a tutorial, or giving a presentation, without changing your screen timeout.
+
+<ul>
+<li>Keep the screen on for the default duration from a Quick Settings tile, or for any duration from the app.</li>
+<li>Extend, reduce or stop it from its notification, shown as a Live Update on Android 16 and later.</li>
+<li>Turning the screen off with the power button, or dismissing the notification, stops it.</li>
+<li>Configurable default duration and steps, light and dark themes, Material You colors.</li>
+<li>Automation with Tasker or adb, which can be turned off.</li>
+</ul>
+
+No Internet permission, no ads, no tracking: nothing ever leaves your device.

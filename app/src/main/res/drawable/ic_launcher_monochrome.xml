@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon (Android 13+): same shapes as ic_launcher_foreground, tinted by the system. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Countdown ring, open at the top where the steam rises. -->
+    <path
+        android:pathData="M66.21,31.04 A26,26 0 1,1 41.79,31.04"
+        android:strokeWidth="5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round" />
+    <!-- Cup on its saucer, with steam. -->
+    <group
+        android:scaleX="0.86"
+        android:scaleY="0.86"
+        android:translateX="7.56"
+        android:translateY="8.06">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M40,48 H64 V57 A9,9 0 0,1 55,66 H49 A9,9 0 0,1 40,57 Z" />
+        <path
+            android:pathData="M64,51 H66.5 A4.25,4.25 0 0,1 66.5,59.5 H64"
+            android:strokeWidth="3"
+            android:strokeColor="#FFFFFFFF" />
+        <path
+            android:pathData="M37,70.5 H67"
+            android:strokeWidth="3"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M47,44 C44.5,41 49.5,39 47,36"
+            android:strokeWidth="2.6"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M55,44 C52.5,41 57.5,39 55,36"
+            android:strokeWidth="2.6"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

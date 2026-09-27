@@ -1,0 +1,1 @@
+- First release: keep the screen on for a set time from a Quick Settings tile, the app, its notification or automation tools.
