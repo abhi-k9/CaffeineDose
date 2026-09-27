@@ -38,12 +38,20 @@ jobs:
     name: Emulator (API ${{ matrix.api }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # The newest emulator images are less stable on these runners: they report, without failing the workflow.
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        # Android 14, the first version restricting foreground services this much, Android 16, 16 QPR2 and 17.
-        # Since Android 16, SDK packages name minor versions: android-36.1, android-37.0.
-        api: [ "34", "36", "36.1", "37.0" ]
+        # Android 14, the first version restricting foreground services this much, and Android 16.
+        api: [ "34", "36" ]
+        experimental: [ false ]
+        # Android 16 QPR2 and 17. Since Android 16, SDK packages name minor versions: android-36.1, android-37.0.
+        include:
+          - api: "36.1"
+            experimental: true
+          - api: "37.0"
+            experimental: true
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -77,8 +85,9 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          # The default disk is too small to install the app on recent images.
+          # The defaults are too small for recent images: the app can't be installed, the system restarts.
           disk-size: 6000M
+          ram-size: 4096M
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none
           disable-animations: true
           emulator-boot-timeout: 900
