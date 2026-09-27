@@ -75,11 +75,16 @@ class AwakeService : Service() {
             when (intent.action) {
                 // Ends whichever timer is running, even one this service has not applied yet.
                 Intent.ACTION_SCREEN_OFF -> {
-                    if (AwakeState.timer != null && SettingsStore.from(context).stopOnScreenOff) awakeTimer().stop()
+                    val stop = AwakeState.timer != null && SettingsStore.from(context).stopOnScreenOff
+                    Log.i(TAG, "Screen off, stopping: $stop")
+                    if (stop) awakeTimer().stop()
                 }
 
                 // The handler may have been delayed by deep sleep while the screen was off: catch up.
-                Intent.ACTION_SCREEN_ON -> update()
+                Intent.ACTION_SCREEN_ON -> {
+                    Log.i(TAG, "Screen on")
+                    update()
+                }
             }
         }
     }
@@ -89,6 +94,7 @@ class AwakeService : Service() {
     @Suppress("DEPRECATION")
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "Created")
         // ON_AFTER_RELEASE: once released, the screen stays on for the usual timeout instead of turning off at once.
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, WAKE_LOCK_TAG)
@@ -104,6 +110,7 @@ class AwakeService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         lastStartId = startId
         val foregroundRequired = intent?.getBooleanExtra(EXTRA_FOREGROUND, false) == true
+        Log.i(TAG, "Started #$startId, foreground required: $foregroundRequired, in foreground: $inForeground")
         if (foregroundRequired) AwakeState.pendingForegroundStarts = (AwakeState.pendingForegroundStarts - 1).coerceAtLeast(0)
         // Required right away after `startForegroundService()`, even if the timer has been released since: stopping
         // before would crash the app. The notification shows the requested timer until update() applies the current one.
@@ -125,11 +132,15 @@ class AwakeService : Service() {
         val timer = AwakeState.timer
         if (timer == null) {
             // Released in the meantime. A later start (a new timer) keeps the service running.
+            Log.i(TAG, "No timer, stopping #$lastStartId")
             stopSelf(lastStartId)
             return
         }
         // Stops this service through the keeper.
-        if (awakeTimer().expireIfDue()) return
+        if (awakeTimer().expireIfDue()) {
+            Log.i(TAG, "Expired")
+            return
+        }
         if (timer != held) {
             held = timer
             getSystemService(NotificationManager::class.java).notify(DoseNotification.ID, DoseNotification.build(this, timer))
@@ -139,6 +150,7 @@ class AwakeService : Service() {
         // Timeouts don't elapse in deep sleep, hence the check on ACTION_SCREEN_ON.
         wakeLock.acquire(remaining)
         handler.postDelayed(check, remaining)
+        Log.i(TAG, "Holding the screen for ${remaining}ms")
     }
 
     private fun enterForeground(timer: Timer) {
@@ -151,6 +163,7 @@ class AwakeService : Service() {
                 startForeground(DoseNotification.ID, notification)
             }
             inForeground = true
+            Log.i(TAG, "In the foreground")
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service. Nothing
             // can hold the screen reliably without a foreground service.
@@ -160,6 +173,7 @@ class AwakeService : Service() {
     }
 
     override fun onDestroy() {
+        Log.i(TAG, "Destroyed, lock held: ${wakeLock.isHeld}, timer: ${AwakeState.timer}, held: $held")
         handler.removeCallbacks(check)
         if (wakeLock.isHeld) wakeLock.release()
         unregisterReceiver(screenReceiver)

@@ -35,6 +35,7 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
 
     override fun hold(timer: Timer): Boolean {
         val previous = AwakeState.timer
+        Log.i(TAG, "Holding $timer, previous: $previous, pending foreground starts: ${AwakeState.pendingForegroundStarts}")
         return try {
             // Set first: the service reads it once started, and it may be started right away.
             AwakeState.timer = timer
@@ -56,6 +57,8 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
     }
 
     override fun release() {
+        // With the caller, to find out what ended a timer.
+        Log.i(TAG, "Releasing ${AwakeState.timer}", Throwable("caller"))
         AwakeState.timer = null
         // Otherwise, the service stops itself once it has called startForeground(), as the timer is gone.
         if (AwakeState.pendingForegroundStarts == 0) context.stopService(AwakeService.intent(context))
