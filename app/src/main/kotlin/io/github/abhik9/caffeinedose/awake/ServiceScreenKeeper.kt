@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import io.github.abhik9.caffeinedose.core.ScreenKeeper
 import io.github.abhik9.caffeinedose.core.Timer
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 
 /**
  * The running timer. It lives in memory only, like the wake lock held by [AwakeService] in the same process: when the
@@ -36,7 +36,7 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
 
     override fun hold(timer: Timer): Boolean {
         val previous = AwakeState.timer
-        Diagnostics.log(context, TAG, "Holding $timer, previous: $previous, pending starts: ${AwakeState.pendingForegroundStarts}")
+        context.diagnostics.record { "keeper: hold $timer, previous=$previous, pending starts=${AwakeState.pendingForegroundStarts}" }
         return try {
             // Set first: the service reads it once started, and it may be started right away.
             AwakeState.timer = timer
@@ -52,14 +52,14 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
             // ForegroundServiceStartNotAllowedException since Android 12, or background start restrictions: e.g. an
             // automation intent received while the app is in the background.
             Log.w(TAG, "Not allowed to hold the screen", e)
-            Diagnostics.log(context, TAG, "Not allowed to hold the screen: $e")
+            context.diagnostics.record { "keeper: not allowed to hold the screen: $e" }
             AwakeState.timer = previous
             false
         }
     }
 
     override fun release() {
-        Diagnostics.log(context, TAG, "Releasing ${AwakeState.timer}")
+        context.diagnostics.record { "keeper: release ${AwakeState.timer}" }
         AwakeState.timer = null
         // Otherwise, the service stops itself once it has called startForeground(), as the timer is gone.
         if (AwakeState.pendingForegroundStarts == 0) context.stopService(AwakeService.intent(context))

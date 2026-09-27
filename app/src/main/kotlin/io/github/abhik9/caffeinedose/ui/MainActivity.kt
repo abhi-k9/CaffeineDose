@@ -2,6 +2,7 @@ package io.github.abhik9.caffeinedose.ui
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.app.PendingIntent
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -11,10 +12,12 @@ import android.graphics.Color
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
@@ -23,7 +26,7 @@ import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 import io.github.abhik9.caffeinedose.system.overlaySettingsIntent
@@ -32,6 +35,7 @@ import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
 import io.github.abhik9.caffeinedose.system.toast
 import io.github.abhik9.caffeinedose.ui.theme.CaffeineDoseTheme
+import java.time.LocalDate
 
 /**
  * Keeps the screen on for an exact duration, controls the running timer, and holds the settings.
@@ -40,6 +44,8 @@ import io.github.abhik9.caffeinedose.ui.theme.CaffeineDoseTheme
 class MainActivity : ComponentActivity() {
 
     companion object {
+        private const val TAG = "MainActivity"
+
         fun pendingIntent(context: Context): PendingIntent =
             PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
     }
@@ -48,8 +54,13 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermission = registerForActivityResult(RequestPermission()) { granted ->
         viewModel.refresh()
+        diagnostics.record { "permission: notifications granted=$granted" }
         // Denied without any prompt (e.g. after two refusals): fall back to the settings.
         if (!granted) openSettings(Requirement.NOTIFICATIONS)
+    }
+
+    private val exportDiagnostics = registerForActivityResult(CreateDocument("text/plain")) { destination ->
+        destination?.let(viewModel::exportDiagnostics)
     }
 
     private val actions = object : MainActions {
@@ -70,18 +81,19 @@ class MainActivity : ComponentActivity() {
         override fun setStopOnScreenOff(enabled: Boolean) = viewModel.setStopOnScreenOff(enabled)
         override fun allowOverlay() = startSettings(overlaySettingsIntent())
 
-        override fun shareDiagnostics() {
-            val send = Intent(Intent.ACTION_SEND)
-                .setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diagnostics_subject))
-                .putExtra(Intent.EXTRA_TEXT, Diagnostics.report(this@MainActivity))
-            startActivity(Intent.createChooser(send, null))
+        override fun setDiagnosticsEnabled(enabled: Boolean) = viewModel.setDiagnosticsEnabled(enabled)
+        override fun clearDiagnostics() = viewModel.clearDiagnostics()
+
+        override fun exportDiagnostics() {
+            try {
+                exportDiagnostics.launch("caffeinedose-diagnostics-${LocalDate.now()}.txt")
+            } catch (e: ActivityNotFoundException) {
+                // No document provider on the device.
+                Log.w(TAG, "Cannot pick a destination", e)
+                toast(R.string.diagnostics_export_failed)
+            }
         }
 
-        override fun clearDiagnostics() {
-            Diagnostics.clear(this@MainActivity)
-            toast(R.string.diagnostics_cleared)
-        }
         override fun resolve(requirement: Requirement) = this@MainActivity.resolve(requirement)
     }
 

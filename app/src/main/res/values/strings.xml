@@ -55,11 +55,13 @@
     <string name="dynamic_color_description">Use colors from your wallpaper</string>
 
     <string name="section_diagnostics">Diagnostics</string>
-    <string name="diagnostics_share_title">Share diagnostics</string>
-    <string name="diagnostics_share_description">What the app did recently, and why Android last stopped it. It stays on this device unless you share it.</string>
-    <string name="diagnostics_clear_title">Clear diagnostics</string>
-    <string name="diagnostics_cleared">Diagnostics cleared</string>
-    <string name="diagnostics_subject">CaffeineDose diagnostics</string>
+    <string name="diagnostics_title">Record diagnostics</string>
+    <string name="diagnostics_description">Keeps a log of what the app does, to help investigate issues. It stays on this device unless you export it.</string>
+    <string name="diagnostics_export">Export log</string>
+    <string name="diagnostics_export_description">Save it with device details to a file (%1$s)</string>
+    <string name="diagnostics_clear">Clear log</string>
+    <string name="diagnostics_exported">Diagnostics exported</string>
+    <string name="diagnostics_export_failed">Could not export the diagnostics</string>
 
     <string name="section_automation">Automation</string>
     <string name="automation_title">Allow other apps to control the timer</string>

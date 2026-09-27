@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.StartResult
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.system.reportBlocked
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
@@ -24,8 +24,8 @@ class StartActivity : Activity() {
     override fun onResume() {
         super.onResume()
         // Started once the activity is in the foreground.
+        diagnostics.record { "tile: start from the fallback activity" }
         val result = awakeTimer().start()
-        Diagnostics.log(this, "StartActivity", "Started from the tile's fallback: $result")
         if (result is StartResult.Blocked) startSettings(settingsIntent(result.requirement))
         reportBlocked(result)
         finish()

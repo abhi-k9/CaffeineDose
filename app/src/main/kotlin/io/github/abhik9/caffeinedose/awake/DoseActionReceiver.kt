@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.abhik9.caffeinedose.EXTRA_DEADLINE
 import io.github.abhik9.caffeinedose.awakeTimer
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.system.reportBlocked
 
 /**
@@ -40,7 +40,7 @@ class DoseActionReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        Diagnostics.log(context, "DoseActionReceiver", "Notification: ${intent.action?.substringAfterLast('.')}")
+        context.diagnostics.record { "notification: ${intent.action}" }
         val timer = context.awakeTimer()
         when (intent.action) {
             ACTION_EXTEND -> context.reportBlocked(timer.extend())

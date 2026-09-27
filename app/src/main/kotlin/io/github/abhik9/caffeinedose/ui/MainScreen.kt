@@ -48,7 +48,8 @@ interface MainActions {
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
     fun allowOverlay()
-    fun shareDiagnostics()
+    fun setDiagnosticsEnabled(enabled: Boolean)
+    fun exportDiagnostics()
     fun clearDiagnostics()
     fun resolve(requirement: Requirement)
 }
@@ -108,7 +109,7 @@ fun MainScreen(
                 SectionHeader(R.string.section_automation)
                 AutomationCard(state, actions)
                 SectionHeader(R.string.section_diagnostics)
-                DiagnosticsCard(actions)
+                DiagnosticsCard(state, actions)
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -150,7 +151,8 @@ private object PreviewActions : MainActions {
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
     override fun allowOverlay() = Unit
-    override fun shareDiagnostics() = Unit
+    override fun setDiagnosticsEnabled(enabled: Boolean) = Unit
+    override fun exportDiagnostics() = Unit
     override fun clearDiagnostics() = Unit
     override fun resolve(requirement: Requirement) = Unit
 }

@@ -24,21 +24,28 @@ Download the APK from the [latest release](https://github.com/abhi-k9/CaffeineDo
    - allow *Keep the screen on over other apps*, needed on some phones (see [How it works](#how-it-works)),
    - choose the theme (System, Light, Dark) and Material You dynamic colors,
    - allow or forbid other apps to control the timer,
-   - share diagnostics when a timer stops unexpectedly (see below).
+   - record diagnostics when something goes wrong (see below).
 
 While the screen is kept on, the device doesn't lock automatically either: stop the timer, or turn the screen off,
 before leaving the device unattended.
 
 ## Diagnostics
 
-Some manufacturers' power management stops apps in ways stock Android doesn't. *Share diagnostics*, in the app, shares
-a short report to help understand it: the relevant settings, why Android last stopped the app
-([`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)), and the latest
-events (timer starts and stops and their source, the service lifecycle, and a heartbeat every 15 seconds while a timer
-runs). It is kept on the device only, see the [privacy policy](PRIVACY.md).
+When something doesn't behave as expected, turn on **Record diagnostics** in the app settings, reproduce the issue,
+then use **Export log** to save it to a file.
 
-The emulator [device test](.github/workflows/device-test.yml) runs the app on stock Android 14 and 16, and checks second
-by second that the screen stays on while a timer runs.
+- The log records what the app does and why: timers started, extended or stopped and from where (app, tile,
+  notification, automation), the service lifecycle, the wake lock and the overlay, the screen turning on and off, a
+  heartbeat every 15 seconds while a timer runs, permission changes, and crashes.
+- The export starts with a snapshot of the app and device state: versions, permissions, battery optimizations, standby
+  bucket, screen timeout, settings, the running timer, and why Android ended the app's last processes
+  ([`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)).
+- It contains no personal data, stays in the app's private storage (excluded from backups), is capped at about 512 KB,
+  and only leaves the device when you export it. **Clear log** deletes it.
+- Nothing is recorded while the setting is off, which is the default (debug builds record by default).
+
+This is how the Samsung behavior below was found: with the service in the foreground and its wake lock held, the screen
+still turned off after the usual timeout.
 
 ## Automation
 
@@ -126,6 +133,11 @@ Requirements: JDK 17 or newer, and the Android SDK (API 37).
 ./gradlew :core:test       # unit tests
 ./gradlew lint             # Android lint (warnings are errors)
 ```
+
+CI runs these on every push and pull request. The [device test](.github/workflows/device-test.yml) runs on demand
+(Actions → Device test → Run workflow, with an API level): it installs the debug app on an emulator and checks, second by
+second, that the screen stays on while a timer runs, from the app, the tile, until it expires and with the overlay, then
+that everything is released. The same script works on a connected device: `.github/scripts/device-test.sh <debug APK>`.
 
 Release builds are minified. They are signed only when a signing configuration is provided, as Gradle properties
 (e.g. in `~/.gradle/gradle.properties`) or environment variables — never commit keystores or passwords:
