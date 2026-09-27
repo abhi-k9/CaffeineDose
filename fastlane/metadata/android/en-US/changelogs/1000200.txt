@@ -1,0 +1,2 @@
+- The screen now stays on with phones that ignore the usual way of keeping it on, such as Samsung phones: allow the new "Keep the screen on over other apps" setting, which the app suggests where needed.
+- Diagnostics: share what the app did, and why Android last stopped it, when a timer stops unexpectedly.
