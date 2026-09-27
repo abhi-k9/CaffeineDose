@@ -1,0 +1,98 @@
+name: Device test
+
+# Runs the debug app on Android emulators and checks that the screen really stays on while a timer runs, see
+# .github/scripts/device-test.sh. Only when the app or this test changes: it takes several minutes.
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - "app/**"
+      - "core/src/main/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - ".github/scripts/device-test.sh"
+      - ".github/workflows/device-test.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "core/src/main/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - ".github/scripts/device-test.sh"
+      - ".github/workflows/device-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  emulator:
+    name: Emulator (API ${{ matrix.api }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Android 14, the first version restricting foreground services this much, and Android 16.
+        api: [ 34, 36 ]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Build the debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      # Hardware acceleration for the emulator.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Start the emulator
+        env:
+          API: ${{ matrix.api }}
+        run: |
+          image="system-images;android-$API;google_apis;x86_64"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses > /dev/null || true
+          "$sdkmanager" --install emulator platform-tools "$image" > /dev/null
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name test --package "$image" --device pixel_6
+          nohup "$ANDROID_HOME/emulator/emulator" -avd test -no-window -no-audio -no-boot-anim -no-snapshot \
+            -gpu swiftshader_indirect -camera-back none -memory 4096 > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          adb wait-for-device
+          timeout 600 bash -c 'until [ "$(adb shell getprop sys.boot_completed | tr -d "\r")" = 1 ]; do sleep 5; done'
+          # Lets the system settle (package manager, System UI) after the boot.
+          sleep 30
+
+      - name: Run the scenarios
+        run: .github/scripts/device-test.sh app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/device-test"
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: device-test-api-${{ matrix.api }}
+          path: ${{ runner.temp }}/device-test
+          if-no-files-found: ignore
