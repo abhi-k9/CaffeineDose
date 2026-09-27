@@ -68,26 +68,18 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Start the emulator
-        env:
-          API: ${{ matrix.api }}
-        run: |
-          image="system-images;android-$API;google_apis;x86_64"
-          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$sdkmanager" --licenses > /dev/null || true
-          "$sdkmanager" --install emulator platform-tools "$image" > /dev/null
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd --name test --package "$image" --device pixel_6
-          nohup "$ANDROID_HOME/emulator/emulator" -avd test -no-window -no-audio -no-boot-anim -no-snapshot \
-            -gpu swiftshader_indirect -camera-back none -memory 4096 > "$RUNNER_TEMP/emulator.log" 2>&1 &
-          adb wait-for-device
-          timeout 600 bash -c 'until [ "$(adb shell getprop sys.boot_completed | tr -d "\r")" = 1 ]; do sleep 5; done'
-          # Lets the system settle (package manager, System UI) after the boot.
-          sleep 30
-
+      # Creates the AVD, boots the emulator (with a boot timeout), runs the script, then shuts the emulator down.
       - name: Run the scenarios
-        run: .github/scripts/device-test.sh app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/device-test"
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: .github/scripts/device-test.sh app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/device-test"
 
       - name: Upload the results
         if: always()
