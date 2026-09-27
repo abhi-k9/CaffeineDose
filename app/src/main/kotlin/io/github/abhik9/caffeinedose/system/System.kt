@@ -19,6 +19,9 @@ fun Context.settingsIntent(requirement: Requirement): Intent = when (requirement
     Requirement.NOTIFICATIONS -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
 }
 
+/** Where the user allows the app to display over other apps, see [io.github.abhik9.caffeinedose.awake.ScreenOverlay]. */
+fun Context.overlaySettingsIntent(): Intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
+
 /** Fallback for OEM builds missing a specific settings screen. */
 fun Context.appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri())
 

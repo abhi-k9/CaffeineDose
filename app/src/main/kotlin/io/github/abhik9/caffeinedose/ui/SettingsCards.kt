@@ -124,6 +124,14 @@ internal fun BehaviorCard(state: MainUiState, actions: MainActions, modifier: Mo
         checked = state.settings.stopOnScreenOff,
         onCheckedChange = actions::setStopOnScreenOff,
     )
+    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+    // A system permission rather than a setting: both ways lead to its settings screen.
+    SwitchItem(
+        title = R.string.overlay_title,
+        description = R.string.overlay_description,
+        checked = state.overlayAllowed,
+        onCheckedChange = { actions.allowOverlay() },
+    )
 }
 
 @Composable

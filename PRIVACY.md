@@ -14,12 +14,13 @@ CaffeineDose is an open source app, provided free of charge and as is.
 
 Permissions the app requests, and why:
 
-| Permission                         | Purpose                                                                  |
-|------------------------------------|--------------------------------------------------------------------------|
-| Notifications                      | Show the running timer and its actions.                                  |
-| Promoted notifications             | Show the running timer as a Live Update (Android 16 QPR2 and later).     |
-| Prevent phone from sleeping        | Keep the screen on while the timer runs (screen wake lock).              |
-| Foreground service (special use)   | Hold the screen wake lock while other apps are displayed.                |
+| Permission                         | Purpose                                                                              |
+|------------------------------------|--------------------------------------------------------------------------------------|
+| Notifications                      | Show the running timer and its actions.                                              |
+| Promoted notifications             | Show the running timer as a Live Update (Android 16 QPR2 and later).                 |
+| Prevent phone from sleeping        | Keep the screen on while the timer runs (screen wake lock).                          |
+| Foreground service (special use)   | Hold the screen wake lock while other apps are displayed.                            |
+| Display over other apps (optional) | Show an invisible window that keeps the screen on, on phones ignoring the wake lock. |
 
 Questions or concerns can be raised on the project's [issue tracker](https://github.com/abhi-k9/CaffeineDose/issues).
 

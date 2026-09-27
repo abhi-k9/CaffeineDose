@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.UiModeManager
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
+import android.provider.Settings
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -37,6 +38,8 @@ data class MainUiState(
     val settings: UserSettings = UserSettings(),
     /** What prevents a timer from running, `null` when nothing does. */
     val missingRequirement: Requirement? = null,
+    /** Whether the app may display over other apps, see [io.github.abhik9.caffeinedose.awake.ScreenOverlay]. */
+    val overlayAllowed: Boolean = false,
     /** Material You colors extracted from the wallpaper, since Android 12. */
     val dynamicColorAvailable: Boolean = SDK_INT >= S,
 )
@@ -71,6 +74,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         timer = timer.current(),
         settings = userSettings,
         missingRequirement = timer.missingRequirement(),
+        overlayAllowed = Settings.canDrawOverlays(getApplication<Application>()),
     )
 
     /** Re-reads the timer and the permissions right away, e.g. when coming back from the system settings. */
