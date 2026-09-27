@@ -12,6 +12,12 @@ import io.github.abhik9.caffeinedose.core.Timer
 internal object AwakeState {
     @Volatile
     var timer: Timer? = null
+
+    /**
+     * `startForegroundService()` calls whose service has not called `startForeground()` yet. Stopping the service in the
+     * meantime crashes the app ("did not then call Service.startForeground()"). Main thread only.
+     */
+    var pendingForegroundStarts = 0
 }
 
 /**
@@ -29,12 +35,16 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
 
     override fun hold(timer: Timer): Boolean {
         val previous = AwakeState.timer
-        val intent = AwakeService.intent(context, timer)
         return try {
             // Set first: the service reads it once started, and it may be started right away.
             AwakeState.timer = timer
-            // A running foreground service keeps the app in the foreground: it can then be updated from anywhere.
-            if (previous != null) context.startService(intent) else context.startForegroundService(intent)
+            if (previous != null) {
+                // A running foreground service keeps the app in the foreground: it can be updated from anywhere.
+                context.startService(AwakeService.intent(context, timer, foreground = false))
+            } else {
+                context.startForegroundService(AwakeService.intent(context, timer, foreground = true))
+                AwakeState.pendingForegroundStarts++
+            }
             true
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException since Android 12, or background start restrictions: e.g. an
@@ -47,6 +57,7 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
 
     override fun release() {
         AwakeState.timer = null
-        context.stopService(AwakeService.intent(context))
+        // Otherwise, the service stops itself once it has called startForeground(), as the timer is gone.
+        if (AwakeState.pendingForegroundStarts == 0) context.stopService(AwakeService.intent(context))
     }
 }

@@ -62,7 +62,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val state: StateFlow<MainUiState> = combine(settings.changes, ticks) { current, _ -> uiState(current) }
-        // Reading the permissions are binder calls: keep them off the main thread.
+        // Reading the permissions is a binder call: keep it off the main thread.
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds.inWholeMilliseconds), uiState(settings.snapshot()))
 

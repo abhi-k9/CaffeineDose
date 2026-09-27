@@ -80,6 +80,32 @@ jobs:
           # The MIT licensed cache implementation, instead of the default proprietary one.
           cache-provider: basic
 
+      # Releases publish the changelog of the app version, and F-Droid enforces these lengths: catch it before tagging.
+      - name: Check the store metadata
+        env:
+          LC_ALL: C.UTF-8
+        run: |
+          dir=fastlane/metadata/android/en-US
+          changelog="$dir/changelogs/$(./gradlew --quiet :app:printVersionCode | tail -n 1).txt"
+          if [ ! -s "$changelog" ]; then
+            echo "::error file=app/build.gradle.kts::Missing $changelog for the app version"
+            exit 1
+          fi
+          failed=0
+          check() { # <file> <max characters>
+            local length
+            length=$(tr -d '\n' < "$1" | wc -m)
+            if [ "$length" -gt "$2" ]; then
+              echo "::error file=$1::$length characters, at most $2 allowed"
+              failed=1
+            fi
+          }
+          check "$dir/title.txt" 50
+          check "$dir/short_description.txt" 80
+          check "$dir/full_description.txt" 4000
+          check "$changelog" 500
+          exit "$failed"
+
       - name: Build, test & lint
         run: ./gradlew assembleDebug assembleRelease :core:test lint --stacktrace --warning-mode all
 

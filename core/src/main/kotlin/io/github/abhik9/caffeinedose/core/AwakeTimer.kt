@@ -71,14 +71,15 @@ class AwakeTimer(
 
     /**
      * Adds [delta] to the remaining time of the running timer.
+     *
+     * A timer past its deadline that has not been released yet (its check is late, e.g. after deep sleep) counts as
+     * having no time left: it can still be extended, from now.
      * @param mayEnd whether [delta] is allowed to end the timer. Otherwise such a [delta] is ignored, and the timer is
      * only re-displayed (to refresh its available actions).
-     * @return `null` when there is no running timer, or it is already ending.
+     * @return `null` when there is no running timer.
      */
     fun adjust(delta: Duration, mayEnd: Boolean = true): StartResult? {
-        val remaining = remaining() ?: return null
-        // The deadline has been reached, the timer is being released.
-        if (!remaining.isPositive()) return null
+        val remaining = remaining()?.coerceAtLeast(Duration.ZERO) ?: return null
         val next = (remaining + delta).coerceAtMost(MAX_TIMER_DURATION)
         return start(if (next.isPositive() || mayEnd) next else remaining)
     }
@@ -86,7 +87,7 @@ class AwakeTimer(
     fun extend(): StartResult? = adjust(settings().increment)
 
     /**
-     * Displayed actions can become stale as time goes by: a tap on "−" never turns the screen off unexpectedly, only
+     * Displayed actions can become stale as time goes by: a tap on "−" never ends a timer before its deadline, only
      * "Stop" does.
      */
     fun reduce(): StartResult? = adjust(-settings().decrement, mayEnd = false)

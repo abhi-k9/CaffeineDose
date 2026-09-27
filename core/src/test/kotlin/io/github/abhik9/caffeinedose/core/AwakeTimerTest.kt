@@ -177,12 +177,28 @@ class AwakeTimerTest {
         }
 
         @Test
-        fun `adjustments are ignored once the deadline is reached`() {
+        fun `a timer past its deadline can still be extended, from now`() {
+            timer.start(1.minutes)
+            clock.advance(3.minutes) // its check is late, e.g. after deep sleep
+            timer.extend().started()
+            assertEquals(10.minutes, held())
+            assertEquals(0, keeper.releases)
+        }
+
+        @Test
+        fun `refreshing a timer past its deadline ends it`() {
             timer.start(1.minutes)
             clock.advance(1.minutes + 1.seconds)
-            assertNull(timer.refresh())
-            assertNull(timer.adjust(-5.minutes))
-            assertEquals(0, keeper.releases)
+            assertEquals(StartResult.Stopped, timer.refresh())
+            assertNull(keeper.held)
+        }
+
+        @Test
+        fun `reducing a timer past its deadline ends it`() {
+            timer.start(1.minutes)
+            clock.advance(1.minutes)
+            assertEquals(StartResult.Stopped, timer.reduce())
+            assertNull(keeper.held)
         }
 
         @Test
