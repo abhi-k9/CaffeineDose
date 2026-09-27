@@ -90,6 +90,13 @@ fun MainScreen(
                         actions.resolve(requirement)
                     })
                 }
+                if (state.missingRequirement == null && state.overlayNeeded && !state.overlayAllowed) {
+                    WarningCard(
+                        title = R.string.overlay_warning_title,
+                        body = R.string.overlay_warning_body,
+                        onClick = actions::allowOverlay,
+                    )
+                }
                 TimerCard(state, actions, elapsedNow)
                 StartTimerCard(state, actions, elapsedNow)
                 SectionHeader(R.string.section_durations)
