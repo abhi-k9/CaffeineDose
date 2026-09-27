@@ -32,6 +32,7 @@ class AwakeTimer(
     private val settings: () -> TimerSettings,
     /** Called after every change of the timer, e.g. to refresh the Quick Settings tile. */
     private val onChange: () -> Unit = {},
+    private val log: EventLog = EventLog.NONE,
 ) {
 
     fun current(): Timer? = keeper.current()
@@ -44,7 +45,11 @@ class AwakeTimer(
      * Starts a timer of [duration] (capped to [MAX_TIMER_DURATION]), replacing the running one.
      * A non positive [duration] stops the timer.
      */
-    fun start(duration: Duration = settings().initial): StartResult {
+    fun start(duration: Duration = settings().initial): StartResult = doStart(duration).also { result ->
+        log.record { "start($duration): $result" }
+    }
+
+    private fun doStart(duration: Duration): StartResult {
         if (!duration.isPositive()) {
             stop()
             return StartResult.Stopped
@@ -58,6 +63,7 @@ class AwakeTimer(
     }
 
     fun stop() {
+        log.record { "stop" }
         keeper.release()
         onChange()
     }
@@ -79,7 +85,9 @@ class AwakeTimer(
      * @return `null` when there is no running timer.
      */
     fun adjust(delta: Duration, mayEnd: Boolean = true): StartResult? {
-        val remaining = remaining()?.coerceAtLeast(Duration.ZERO) ?: return null
+        val left = remaining()
+        log.record { "adjust($delta, mayEnd=$mayEnd): remaining=$left" }
+        val remaining = left?.coerceAtLeast(Duration.ZERO) ?: return null
         val next = (remaining + delta).coerceAtMost(MAX_TIMER_DURATION)
         return start(if (next.isPositive() || mayEnd) next else remaining)
     }
@@ -101,7 +109,9 @@ class AwakeTimer(
      * @return whether the timer has been ended.
      */
     fun end(deadline: Long): Boolean {
-        if (current()?.deadline != deadline) return false
+        val current = current()
+        log.record { "end($deadline) at ${clock.elapsedMillis()}: current=$current" }
+        if (current?.deadline != deadline) return false
         stop()
         return true
     }

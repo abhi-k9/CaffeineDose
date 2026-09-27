@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.minutes
  */
 internal object DoseNotification {
     const val ID = 1
-    private const val CHANNEL_ID = "dose"
+    const val CHANNEL_ID = "dose"
 
     /** Idempotent: the channel is only created once, and later calls never override the user's choices. */
     fun createChannel(context: Context) {

@@ -2,6 +2,7 @@ package io.github.abhik9.caffeinedose.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import androidx.core.content.edit
 import io.github.abhik9.caffeinedose.core.DurationSetting
@@ -21,6 +22,7 @@ data class UserSettings(
     val dynamicColor: Boolean = true,
     val automationEnabled: Boolean = true,
     val stopOnScreenOff: Boolean = true,
+    val diagnosticsEnabled: Boolean = false,
 ) {
     fun minutes(setting: DurationSetting): Int = durations[setting] ?: setting.defaultMinutes
 }
@@ -29,7 +31,11 @@ data class UserSettings(
  * User settings, stored in [SharedPreferences]: they are read synchronously by broadcast receivers and the tile.
  * Every read is validated, so that a corrupted or tampered file can only fall back to the defaults.
  */
-class SettingsStore private constructor(private val prefs: SharedPreferences) {
+class SettingsStore private constructor(
+    private val prefs: SharedPreferences,
+    /** Debug builds record diagnostics unless turned off, e.g. for the device test. */
+    private val diagnosticsByDefault: Boolean,
+) {
 
     companion object {
         private const val TAG = "SettingsStore"
@@ -38,6 +44,7 @@ class SettingsStore private constructor(private val prefs: SharedPreferences) {
         private const val KEY_DYNAMIC_COLOR = "dynamic_color"
         private const val KEY_AUTOMATION = "automation"
         private const val KEY_STOP_ON_SCREEN_OFF = "stop_on_screen_off"
+        private const val KEY_DIAGNOSTICS = "diagnostics"
 
         private val DurationSetting.key: String
             get() = when (this) {
@@ -46,7 +53,11 @@ class SettingsStore private constructor(private val prefs: SharedPreferences) {
                 DurationSetting.DECREMENT -> "timeout_decrement_minutes"
             }
 
-        fun from(context: Context) = SettingsStore(context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE))
+        fun from(context: Context): SettingsStore {
+            val app = context.applicationContext
+            val debuggable = (app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            return SettingsStore(app.getSharedPreferences(FILE, Context.MODE_PRIVATE), diagnosticsByDefault = debuggable)
+        }
     }
 
     fun minutes(setting: DurationSetting): Int = setting.sanitize(read(setting.key, setting.defaultMinutes, prefs::getInt))
@@ -74,12 +85,18 @@ class SettingsStore private constructor(private val prefs: SharedPreferences) {
         get() = read(KEY_STOP_ON_SCREEN_OFF, true, prefs::getBoolean)
         set(value) = prefs.edit { putBoolean(KEY_STOP_ON_SCREEN_OFF, value) }
 
+    /** Whether the [io.github.abhik9.caffeinedose.diagnostics.DiagnosticsLog] is recording. */
+    var diagnosticsEnabled: Boolean
+        get() = read(KEY_DIAGNOSTICS, diagnosticsByDefault, prefs::getBoolean)
+        set(value) = prefs.edit { putBoolean(KEY_DIAGNOSTICS, value) }
+
     fun snapshot() = UserSettings(
         durations = DurationSetting.entries.associateWith(::minutes),
         themeMode = themeMode,
         dynamicColor = dynamicColor,
         automationEnabled = automationEnabled,
         stopOnScreenOff = stopOnScreenOff,
+        diagnosticsEnabled = diagnosticsEnabled,
     )
 
     /** Emits the current settings, then every change. */

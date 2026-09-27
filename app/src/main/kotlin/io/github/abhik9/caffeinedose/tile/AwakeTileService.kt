@@ -17,7 +17,7 @@ import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.system.message
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
@@ -33,6 +33,7 @@ fun Context.requestTileUpdate() {
     } catch (e: RuntimeException) {
         // Refused on some devices while the app is in the background: the tile refreshes when it becomes visible anyway.
         Log.w(TAG, "Tile update refused", e)
+        diagnostics.record { "tile: update refused: $e" }
     }
 }
 
@@ -44,9 +45,8 @@ class AwakeTileService : TileService() {
     override fun onStartListening() = render(awakeTimer().current())
 
     override fun onClick() {
-        val result = awakeTimer().toggle()
-        Diagnostics.log(this, TAG, "Tile: $result")
-        when (result) {
+        diagnostics.record { "tile: click, locked=$isLocked" }
+        when (val result = awakeTimer().toggle()) {
             is StartResult.Started -> render(result.timer)
             StartResult.Stopped -> render(null)
             is StartResult.Blocked -> resolve(result.requirement)

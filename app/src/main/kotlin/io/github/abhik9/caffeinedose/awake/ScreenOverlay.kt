@@ -2,6 +2,7 @@ package io.github.abhik9.caffeinedose.awake
 
 import android.content.Context
 import android.graphics.PixelFormat
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -11,6 +12,7 @@ import android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
 import android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
 import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
 import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 
 /**
  * An invisible 1×1 window over other apps, keeping the screen on with [FLAG_KEEP_SCREEN_ON] while it is shown.
@@ -22,8 +24,14 @@ import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
  */
 internal class ScreenOverlay(private val context: Context) {
 
-    private companion object {
-        const val TAG = "ScreenOverlay"
+    companion object {
+        private const val TAG = "ScreenOverlay"
+
+        /**
+         * Whether this device is known to ignore the screen wake lock of an app that isn't visible: the screen then only
+         * stays on with the overlay. Seen on a Samsung Galaxy S24 Ultra with Android 16.
+         */
+        fun isNeeded(): Boolean = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
     }
 
     private val windows = context.getSystemService(WindowManager::class.java)
@@ -62,6 +70,7 @@ internal class ScreenOverlay(private val context: Context) {
         } catch (e: RuntimeException) {
             // BadTokenException when the permission has just been revoked, or SecurityException on some devices.
             Log.w(TAG, "Can't show the overlay", e)
+            context.diagnostics.record { "overlay: can't be shown: $e" }
         }
     }
 
@@ -73,6 +82,7 @@ internal class ScreenOverlay(private val context: Context) {
         } catch (e: IllegalArgumentException) {
             // Already removed by the system.
             Log.w(TAG, "Can't hide the overlay", e)
+            context.diagnostics.record { "overlay: can't be hidden: $e" }
         }
     }
 }

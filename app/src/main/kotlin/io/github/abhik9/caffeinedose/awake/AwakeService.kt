@@ -21,7 +21,7 @@ import io.github.abhik9.caffeinedose.EXTRA_DEADLINE
 import io.github.abhik9.caffeinedose.EXTRA_ENDS_AT
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Timer
-import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 
@@ -76,7 +76,7 @@ class AwakeService : Service() {
             val interactive = getSystemService(PowerManager::class.java).isInteractive
             // Also picks up a permission granted or revoked in the meantime.
             syncOverlay()
-            log("Heartbeat: lock held ${wakeLock.isHeld}, overlay ${overlay.isShown}, screen interactive $interactive, ${remaining}s left")
+            record { "heartbeat, lock held=${wakeLock.isHeld}, overlay=${overlay.isShown}, interactive=$interactive, ${remaining}s left" }
             handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
@@ -95,13 +95,13 @@ class AwakeService : Service() {
                 // Ends whichever timer is running, even one this service has not applied yet.
                 Intent.ACTION_SCREEN_OFF -> {
                     val stop = AwakeState.timer != null && SettingsStore.from(context).stopOnScreenOff
-                    log("Screen off, stopping: $stop")
+                    record { "screen off, stopping=$stop" }
                     if (stop) awakeTimer().stop()
                 }
 
                 // The handler may have been delayed by deep sleep while the screen was off: catch up.
                 Intent.ACTION_SCREEN_ON -> {
-                    log("Screen on")
+                    record { "screen on" }
                     update()
                 }
             }
@@ -110,12 +110,12 @@ class AwakeService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun log(message: String) = Diagnostics.log(this, TAG, message)
+    private fun record(message: () -> String) = diagnostics.record { "service: ${message()}" }
 
     @Suppress("DEPRECATION")
     override fun onCreate() {
         super.onCreate()
-        log("Created in process ${Process.myPid()}")
+        record { "created in process ${Process.myPid()}" }
         // ON_AFTER_RELEASE: once released, the screen stays on for the usual timeout instead of turning off at once.
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, WAKE_LOCK_TAG)
@@ -132,7 +132,7 @@ class AwakeService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         lastStartId = startId
         val foregroundRequired = intent?.getBooleanExtra(EXTRA_FOREGROUND, false) == true
-        log("Started #$startId, foreground required: $foregroundRequired, in foreground: $inForeground")
+        record { "start #$startId, foreground required=$foregroundRequired, in foreground=$inForeground" }
         if (foregroundRequired) AwakeState.pendingForegroundStarts = (AwakeState.pendingForegroundStarts - 1).coerceAtLeast(0)
         // Required right away after `startForegroundService()`, even if the timer has been released since: stopping
         // before would crash the app. The notification shows the requested timer until update() applies the current one.
@@ -154,13 +154,13 @@ class AwakeService : Service() {
         val timer = AwakeState.timer
         if (timer == null) {
             // Released in the meantime. A later start (a new timer) keeps the service running.
-            log("No timer, stopping #$lastStartId")
+            record { "no timer, stop #$lastStartId" }
             stopSelf(lastStartId)
             return
         }
         // Stops this service through the keeper.
         if (awakeTimer().expireIfDue()) {
-            log("Expired")
+            record { "expired" }
             return
         }
         if (timer != held) {
@@ -175,12 +175,12 @@ class AwakeService : Service() {
         handler.removeCallbacks(heartbeat)
         handler.postDelayed(heartbeat, HEARTBEAT_MS)
         syncOverlay()
-        log("Holding the screen for ${remaining}ms, overlay ${overlay.isShown}")
+        record { "holding the screen for ${remaining}ms, overlay=${overlay.isShown}" }
     }
 
     private fun syncOverlay() {
         val shown = overlay.isShown
-        if (overlay.sync() != shown) log(if (shown) "Overlay hidden" else "Overlay shown")
+        if (overlay.sync() != shown) record { if (shown) "overlay hidden" else "overlay shown" }
     }
 
     private fun enterForeground(timer: Timer) {
@@ -193,18 +193,18 @@ class AwakeService : Service() {
                 startForeground(DoseNotification.ID, notification)
             }
             inForeground = true
-            log("In the foreground")
+            record { "in the foreground" }
         } catch (e: IllegalStateException) {
             // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service. Nothing
             // can hold the screen reliably without a foreground service.
             Log.w(TAG, "Foreground service not allowed", e)
-            log("Foreground service not allowed: $e")
+            record { "foreground not allowed: $e" }
             awakeTimer().stop()
         }
     }
 
     override fun onDestroy() {
-        log("Destroyed, lock held: ${wakeLock.isHeld}, timer: ${AwakeState.timer}, held: $held")
+        record { "destroyed, lock held=${wakeLock.isHeld}, timer=${AwakeState.timer}, held=$held" }
         handler.removeCallbacks(check)
         handler.removeCallbacks(heartbeat)
         overlay.hide()

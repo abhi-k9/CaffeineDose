@@ -1,5 +1,6 @@
 package io.github.abhik9.caffeinedose.ui
 
+import android.text.format.Formatter
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
@@ -135,19 +137,30 @@ internal fun BehaviorCard(state: MainUiState, actions: MainActions, modifier: Mo
 }
 
 @Composable
-internal fun DiagnosticsCard(actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.diagnostics_share_title)) },
-        supportingContent = { Text(stringResource(R.string.diagnostics_share_description)) },
-        colors = settingsItemColors(),
-        modifier = Modifier.clickable(onClick = actions::shareDiagnostics),
+internal fun DiagnosticsCard(state: MainUiState, actions: MainActions, modifier: Modifier = Modifier) = SettingsCard(modifier) {
+    SwitchItem(
+        title = R.string.diagnostics_title,
+        description = R.string.diagnostics_description,
+        checked = state.settings.diagnosticsEnabled,
+        onCheckedChange = actions::setDiagnosticsEnabled,
     )
-    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.diagnostics_clear_title)) },
-        colors = settingsItemColors(),
-        modifier = Modifier.clickable(onClick = actions::clearDiagnostics),
-    )
+    // Only once something has been recorded.
+    if (state.diagnosticsLogBytes > 0) {
+        val size = Formatter.formatShortFileSize(LocalContext.current, state.diagnosticsLogBytes)
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.diagnostics_export)) },
+            supportingContent = { Text(stringResource(R.string.diagnostics_export_description, size)) },
+            colors = settingsItemColors(),
+            modifier = Modifier.clickable(onClick = actions::exportDiagnostics),
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.diagnostics_clear)) },
+            colors = settingsItemColors(),
+            modifier = Modifier.clickable(onClick = actions::clearDiagnostics),
+        )
+    }
 }
 
 @Composable

@@ -5,6 +5,7 @@ import android.os.SystemClock
 import io.github.abhik9.caffeinedose.awake.ServiceScreenKeeper
 import io.github.abhik9.caffeinedose.core.AwakeTimer
 import io.github.abhik9.caffeinedose.core.DeviceClock
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 
@@ -31,5 +32,6 @@ fun Context.awakeTimer(): AwakeTimer {
         clock = SystemDeviceClock,
         settings = settings::timerSettings,
         onChange = context::requestTileUpdate,
+        log = context.diagnostics,
     )
 }
