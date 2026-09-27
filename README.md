@@ -24,6 +24,9 @@ Download the APK from the [latest release](https://github.com/abhi-k9/CaffeineDo
    - choose the theme (System, Light, Dark) and Material You dynamic colors,
    - allow or forbid other apps to control the timer.
 
+While the screen is kept on, the device doesn't lock automatically either: stop the timer, or turn the screen off,
+before leaving the device unattended.
+
 ## Automation
 
 Tools like [Tasker](https://tasker.joaoapps.com/) or `adb` can control the timer with explicit broadcasts.
@@ -117,7 +120,9 @@ Release builds are minified. They are signed only when a signing configuration i
 
 ## Releasing
 
-1. Bump the version in `app/build.gradle.kts` on `main`.
+1. Bump the version in `app/build.gradle.kts` on `main`, and add its changelog as
+   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (`./gradlew -q :app:printVersionCode` prints the
+   version code). CI checks that it exists, and the release notes start with it.
 2. Run the [release workflow](.github/workflows/release.yml) on `main` (Actions → Release → Run workflow), which creates
    the `vX.Y.Z` tag. Alternatively, push that tag yourself: it must point to a commit of `main`.
 
@@ -136,8 +141,8 @@ It requires these repository (or `release` environment) secrets, in Settings →
 | `CAFFEINEDOSE_SIGNING_KEY_PASSWORD`    | The key password                     |
 
 It also requires the `CAFFEINEDOSE_SIGNING_CERT_SHA256` repository (or `release` environment) **variable**: the SHA-256
-digest of the signing certificate, in lowercase hexadecimal without colons (`apksigner verify --print-certs` prints it).
-The workflow refuses to publish an APK signed with any other key.
+digest of the signing certificate, as printed by `apksigner verify --print-certs` or `keytool -list -v`. The workflow
+checks it before building, and refuses to publish an APK signed with any other key.
 
 A keystore can be created once with `keytool`, or the ZzzTimer one reused. Keep it and its passwords safe: every future
 update must be signed with the same key.
@@ -149,8 +154,8 @@ base64 -w 0 caffeinedose-release.jks   # value of CAFFEINEDOSE_SIGNING_KEYSTORE_
 
 ### Verifying a download
 
-- Its signing certificate can be checked with `apksigner verify --print-certs`, AppVerifier or Obtainium. Its SHA-256
-  digest will be listed here with the first release.
+- Its signing certificate can be checked with `apksigner verify --print-certs`, AppVerifier or Obtainium, against the
+  SHA-256 digest listed in the release notes.
 - It was built by this repository's release workflow:
   ```bash
   gh attestation verify CaffeineDose-vX.Y.Z.apk --repo abhi-k9/CaffeineDose

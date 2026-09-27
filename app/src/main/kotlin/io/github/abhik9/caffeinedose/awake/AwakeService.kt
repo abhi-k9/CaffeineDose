@@ -33,6 +33,10 @@ import io.github.abhik9.caffeinedose.tile.requestTileUpdate
  * Started and stopped by the [ServiceScreenKeeper]. It ends the timer itself when:
  * - the deadline is reached,
  * - the screen is turned off (e.g. with the power button), unless disabled in the settings.
+ *
+ * `startForeground()` is only called when required: when started with `startForegroundService()`, or not in the
+ * foreground yet. Since Android 12, calling it again from the background (e.g. to update the timer from an automation
+ * intent) can throw. Updates only re-post the notification.
  */
 class AwakeService : Service() {
 
@@ -40,10 +44,15 @@ class AwakeService : Service() {
         private const val TAG = "AwakeService"
         private const val WAKE_LOCK_TAG = "CaffeineDose:screen"
 
+        /** Whether the intent has been sent with `startForegroundService()`, which requires calling `startForeground()`. */
+        private const val EXTRA_FOREGROUND = "io.github.abhik9.caffeinedose.extra.FOREGROUND"
+
         fun intent(context: Context) = Intent(context, AwakeService::class.java)
 
-        fun intent(context: Context, timer: Timer): Intent =
-            intent(context).putExtra(EXTRA_DEADLINE, timer.deadline).putExtra(EXTRA_ENDS_AT, timer.endsAt)
+        fun intent(context: Context, timer: Timer, foreground: Boolean): Intent = intent(context)
+            .putExtra(EXTRA_DEADLINE, timer.deadline)
+            .putExtra(EXTRA_ENDS_AT, timer.endsAt)
+            .putExtra(EXTRA_FOREGROUND, foreground)
 
         private fun Intent.timer(): Timer? {
             val deadline = getLongExtra(EXTRA_DEADLINE, 0L)
@@ -56,15 +65,17 @@ class AwakeService : Service() {
 
     private lateinit var wakeLock: PowerManager.WakeLock
 
-    /** The timer shown by the notification, and held by the [wakeLock]. Main thread only. */
+    /** The timer shown by the notification, and held by the [wakeLock]. Like the fields below, main thread only. */
     private var held: Timer? = null
+    private var inForeground = false
+    private var lastStartId = 0
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
+                // Ends whichever timer is running, even one this service has not applied yet.
                 Intent.ACTION_SCREEN_OFF -> {
-                    val timer = held ?: return
-                    if (SettingsStore.from(context).stopOnScreenOff) awakeTimer().end(timer.deadline)
+                    if (AwakeState.timer != null && SettingsStore.from(context).stopOnScreenOff) awakeTimer().stop()
                 }
 
                 // The handler may have been delayed by deep sleep while the screen was off: catch up.
@@ -91,13 +102,15 @@ class AwakeService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Must be called right away when started with `startForegroundService()`, even if the timer ended since.
-        val requested = intent?.timer() ?: AwakeState.timer
-        if (requested == null) {
-            stopSelf(startId)
-            return START_NOT_STICKY
+        lastStartId = startId
+        val foregroundRequired = intent?.getBooleanExtra(EXTRA_FOREGROUND, false) == true
+        if (foregroundRequired) AwakeState.pendingForegroundStarts = (AwakeState.pendingForegroundStarts - 1).coerceAtLeast(0)
+        // Required right away after `startForegroundService()`, even if the timer has been released since: stopping
+        // before would crash the app. The notification shows the requested timer until update() applies the current one.
+        if (foregroundRequired || !inForeground) {
+            val requested = intent?.timer() ?: AwakeState.timer
+            enterForeground(requested ?: Timer(deadline = SystemClock.elapsedRealtime(), endsAt = System.currentTimeMillis()))
         }
-        enterForeground(requested)
         update()
         // Not restarted by the system: the timer is gone with the process.
         return START_NOT_STICKY
@@ -111,8 +124,8 @@ class AwakeService : Service() {
         handler.removeCallbacks(check)
         val timer = AwakeState.timer
         if (timer == null) {
-            // Released in the meantime.
-            stopSelf()
+            // Released in the meantime. A later start (a new timer) keeps the service running.
+            stopSelf(lastStartId)
             return
         }
         // Stops this service through the keeper.
@@ -137,10 +150,12 @@ class AwakeService : Service() {
             } else {
                 startForeground(DoseNotification.ID, notification)
             }
+            inForeground = true
         } catch (e: IllegalStateException) {
-            // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service.
+            // ForegroundServiceStartNotAllowedException: the keeper normally reports it when starting the service. Nothing
+            // can hold the screen reliably without a foreground service.
             Log.w(TAG, "Foreground service not allowed", e)
-            awakeTimer().end(timer.deadline)
+            awakeTimer().stop()
         }
     }
 

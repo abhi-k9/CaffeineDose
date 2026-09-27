@@ -120,6 +120,12 @@ tasks.register("printVersionName") {
     doLast { println(versionName) }
 }
 
+// Used by the workflows to find the changelog of the app version: fastlane/metadata/android/en-US/changelogs/<code>.txt
+tasks.register("printVersionCode") {
+    val versionCode = versionCodeOf(versionMajor, versionMinor, versionPatch, versionBuild)
+    doLast { println(versionCode) }
+}
+
 dependencies {
     implementation(project(":core"))
 

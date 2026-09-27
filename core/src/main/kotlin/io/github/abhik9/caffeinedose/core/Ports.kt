@@ -24,4 +24,6 @@ interface ScreenKeeper {
 }
 
 /** Something the user must allow before a timer can run, in the order they must be resolved. */
-enum class Requirement { NOTIFICATIONS, }
+enum class Requirement {
+    NOTIFICATIONS,
+}

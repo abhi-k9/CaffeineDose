@@ -39,7 +39,7 @@
 
     <string name="section_behavior">Behavior</string>
     <string name="stop_on_screen_off_title">Stop when the screen is turned off</string>
-    <string name="stop_on_screen_off_description">Turning the screen off, e.g. with the power button, ends the timer.</string>
+    <string name="stop_on_screen_off_description">Turning the screen off, e.g. with the power button, ends the timer. Otherwise, the screen stays on until the timer ends, even on the lock screen.</string>
 
     <string name="section_appearance">Appearance</string>
     <string name="theme_title">Theme</string>
