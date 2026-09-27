@@ -1,0 +1,5 @@
+- Fixed a crash when starting and stopping the timer in quick succession, e.g. from the tile.
+- Changing the timer from automation tools while the app is in the background no longer ends it.
+- Turning the screen off right after changing the timer now reliably stops it.
+- Tapping "+" as the timer ends now extends it instead of being ignored.
+- Clearer description of the "Stop when the screen is turned off" setting.
