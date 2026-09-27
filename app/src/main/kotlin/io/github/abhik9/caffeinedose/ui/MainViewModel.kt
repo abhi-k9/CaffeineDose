@@ -2,6 +2,7 @@ package io.github.abhik9.caffeinedose.ui
 
 import android.app.Application
 import android.app.UiModeManager
+import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
 import android.provider.Settings
@@ -40,6 +41,8 @@ data class MainUiState(
     val missingRequirement: Requirement? = null,
     /** Whether the app may display over other apps, see [io.github.abhik9.caffeinedose.awake.ScreenOverlay]. */
     val overlayAllowed: Boolean = false,
+    /** Whether this device is known to ignore the wake lock, see [overlayNeeded]. */
+    val overlayNeeded: Boolean = false,
     /** Material You colors extracted from the wallpaper, since Android 12. */
     val dynamicColorAvailable: Boolean = SDK_INT >= S,
 )
@@ -75,6 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         settings = userSettings,
         missingRequirement = timer.missingRequirement(),
         overlayAllowed = Settings.canDrawOverlays(getApplication<Application>()),
+        overlayNeeded = overlayNeeded(),
     )
 
     /** Re-reads the timer and the permissions right away, e.g. when coming back from the system settings. */
@@ -121,6 +125,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         settings.stopOnScreenOff = enabled
     }
 }
+
+/**
+ * Devices known to ignore the screen wake lock of an app that isn't visible: the screen then only stays on with the
+ * overlay, see [io.github.abhik9.caffeinedose.awake.ScreenOverlay]. Seen on a Samsung Galaxy S24 Ultra with Android 16.
+ */
+private fun overlayNeeded(): Boolean = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
 
 private val ThemeMode.nightMode: Int
     get() = when (this) {
