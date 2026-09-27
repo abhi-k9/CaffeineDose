@@ -42,7 +42,8 @@ jobs:
       fail-fast: false
       matrix:
         # Android 14, the first version restricting foreground services this much, Android 16, 16 QPR2 and 17.
-        api: [ "34", "36", "36.1", "37" ]
+        # Since Android 16, SDK packages name minor versions: android-36.1, android-37.0.
+        api: [ "34", "36", "36.1", "37.0" ]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,6 +77,8 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          # The default disk is too small to install the app on recent images.
+          disk-size: 6000M
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none
           disable-animations: true
           emulator-boot-timeout: 900
