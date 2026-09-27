@@ -1,0 +1,2 @@
+- Diagnostics are now a "Record diagnostics" setting, off by default. When on, the app keeps a detailed log on your device of what it does, including crashes, and "Export log" saves it to a file with device details.
+- The always-on diagnostics log of the previous version is removed.
