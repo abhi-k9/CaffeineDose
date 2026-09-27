@@ -26,6 +26,7 @@ import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
+import io.github.abhik9.caffeinedose.system.overlaySettingsIntent
 import io.github.abhik9.caffeinedose.system.reportBlocked
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
         override fun setDynamicColor(enabled: Boolean) = viewModel.setDynamicColor(enabled)
         override fun setAutomationEnabled(enabled: Boolean) = viewModel.setAutomationEnabled(enabled)
         override fun setStopOnScreenOff(enabled: Boolean) = viewModel.setStopOnScreenOff(enabled)
+        override fun allowOverlay() = startSettings(overlaySettingsIntent())
 
         override fun shareDiagnostics() {
             val send = Intent(Intent.ACTION_SEND)

@@ -41,8 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Android 14, the first version restricting foreground services this much, and Android 16.
-        api: [ 34, 36 ]
+        # Android 14, the first version restricting foreground services this much, Android 16, 16 QPR2 and 17.
+        api: [ "34", "36", "36.1", "37" ]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

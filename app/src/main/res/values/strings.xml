@@ -41,6 +41,9 @@
     <string name="stop_on_screen_off_title">Stop when the screen is turned off</string>
     <string name="stop_on_screen_off_description">Turning the screen off, e.g. with the power button, ends the timer. Otherwise, the screen stays on until the timer ends, even on the lock screen.</string>
 
+    <string name="overlay_title">Keep the screen on over other apps</string>
+    <string name="overlay_description">Needed on some phones, e.g. Samsung, which ignore the usual way of keeping the screen on. Lets CaffeineDose show an invisible window over other apps while a timer runs.</string>
+
     <string name="section_appearance">Appearance</string>
     <string name="theme_title">Theme</string>
     <string name="theme_system">System</string>

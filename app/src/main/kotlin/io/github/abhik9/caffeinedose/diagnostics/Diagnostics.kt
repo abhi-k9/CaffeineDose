@@ -81,6 +81,7 @@ object Diagnostics {
         if (SDK_INT >= P) appendLine("Background restricted: ${activities.isBackgroundRestricted}")
         appendLine("Screen timeout: ${Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, -1)} ms")
         appendLine("Stop when the screen is turned off: ${SettingsStore.from(context).stopOnScreenOff}")
+        appendLine("Display over other apps: ${Settings.canDrawOverlays(context)}")
         appendLine("Running timer: ${AwakeState.timer}")
 
         appendLine()

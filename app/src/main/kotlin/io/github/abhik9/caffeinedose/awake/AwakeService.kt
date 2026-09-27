@@ -26,11 +26,13 @@ import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.tile.requestTileUpdate
 
 /**
- * Keeps the screen on until the deadline of the [AwakeState.timer], with a screen wake lock.
+ * Keeps the screen on until the deadline of the [AwakeState.timer], with a screen wake lock, and a [ScreenOverlay] when
+ * allowed.
  *
  * `FLAG_KEEP_SCREEN_ON`, the recommended replacement of screen wake locks, only works while one of the app's windows is
- * visible: the deprecated screen wake lock is the only way to keep the screen on over other apps. A foreground service
- * holds it, as a wake lock only lives as long as its process.
+ * visible: without the "Display over other apps" permission, the deprecated screen wake lock is the only way to keep the
+ * screen on over other apps. Some devices ignore it, hence the optional overlay. A foreground service holds both, as they
+ * only live as long as its process.
  *
  * Started and stopped by the [ServiceScreenKeeper]. It ends the timer itself when:
  * - the deadline is reached,
@@ -72,12 +74,15 @@ class AwakeService : Service() {
             val timer = held ?: return
             val remaining = (timer.deadline - SystemClock.elapsedRealtime()) / 1000
             val interactive = getSystemService(PowerManager::class.java).isInteractive
-            log("Heartbeat: lock held ${wakeLock.isHeld}, screen interactive $interactive, ${remaining}s left")
+            // Also picks up a permission granted or revoked in the meantime.
+            syncOverlay()
+            log("Heartbeat: lock held ${wakeLock.isHeld}, overlay ${overlay.isShown}, screen interactive $interactive, ${remaining}s left")
             handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
 
     private lateinit var wakeLock: PowerManager.WakeLock
+    private lateinit var overlay: ScreenOverlay
 
     /** The timer shown by the notification, and held by the [wakeLock]. Like the fields below, main thread only. */
     private var held: Timer? = null
@@ -115,6 +120,7 @@ class AwakeService : Service() {
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, WAKE_LOCK_TAG)
             .apply { setReferenceCounted(false) }
+        overlay = ScreenOverlay(this)
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
@@ -168,7 +174,13 @@ class AwakeService : Service() {
         handler.postDelayed(check, remaining)
         handler.removeCallbacks(heartbeat)
         handler.postDelayed(heartbeat, HEARTBEAT_MS)
-        log("Holding the screen for ${remaining}ms")
+        syncOverlay()
+        log("Holding the screen for ${remaining}ms, overlay ${overlay.isShown}")
+    }
+
+    private fun syncOverlay() {
+        val shown = overlay.isShown
+        if (overlay.sync() != shown) log(if (shown) "Overlay hidden" else "Overlay shown")
     }
 
     private fun enterForeground(timer: Timer) {
@@ -195,6 +207,7 @@ class AwakeService : Service() {
         log("Destroyed, lock held: ${wakeLock.isHeld}, timer: ${AwakeState.timer}, held: $held")
         handler.removeCallbacks(check)
         handler.removeCallbacks(heartbeat)
+        overlay.hide()
         if (wakeLock.isHeld) wakeLock.release()
         unregisterReceiver(screenReceiver)
         // Stopped by the system rather than by the keeper: don't report a timer that nothing holds anymore. A newer timer

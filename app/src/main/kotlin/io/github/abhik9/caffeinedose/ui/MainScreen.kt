@@ -47,6 +47,7 @@ interface MainActions {
     fun setDynamicColor(enabled: Boolean)
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
+    fun allowOverlay()
     fun shareDiagnostics()
     fun clearDiagnostics()
     fun resolve(requirement: Requirement)
@@ -141,6 +142,7 @@ private object PreviewActions : MainActions {
     override fun setDynamicColor(enabled: Boolean) = Unit
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
+    override fun allowOverlay() = Unit
     override fun shareDiagnostics() = Unit
     override fun clearDiagnostics() = Unit
     override fun resolve(requirement: Requirement) = Unit

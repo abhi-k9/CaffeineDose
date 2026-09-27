@@ -55,7 +55,7 @@ automation() { # <action> [duration in seconds]
 # "free" (no timer: only recorded).
 sample() { # <scenario> <seconds> <expectation>
   local scenario=$1 seconds=$2 expectation=$3
-  local start now state lock pid foreground notification ok=1 pids=""
+  local start now state lock pid foreground notification overlay ok=1 pids=""
   start=$(date +%s)
   while now=$(date +%s); [ $((now - start)) -lt "$seconds" ]; do
     state=$(wakefulness)
@@ -63,8 +63,10 @@ sample() { # <scenario> <seconds> <expectation>
     pid=$(device pidof "$pkg" || true)
     foreground=$(device dumpsys activity services "$pkg" | grep -c "isForeground=true" || true)
     notification=$(device dumpsys notification | grep -c "pkg=$pkg" || true)
-    printf '%-14s t=%3ss screen=%-8s pid=%-6s foreground=%s notification=%s lock=%s\n' \
-      "$scenario" $((now - start)) "$state" "${pid:-none}" "$foreground" "$notification" "${lock:-none}" | tee -a "$out/timeline.txt"
+    overlay=$(device dumpsys window windows | grep -c "u0 CaffeineDose}" || true)
+    printf '%-14s t=%3ss screen=%-8s pid=%-6s foreground=%s notification=%s overlay=%s lock=%s\n' \
+      "$scenario" $((now - start)) "$state" "${pid:-none}" "$foreground" "$notification" "$overlay" "${lock:-none}" |
+      tee -a "$out/timeline.txt"
     if [ "$expectation" = held ]; then
       if [ "$state" != Awake ] || [ -z "$lock" ] || [ "$foreground" = 0 ]; then ok=0; fi
       pids="$pids ${pid:-none}"
@@ -130,6 +132,23 @@ sleep 1
 device input keyevent KEYCODE_HOME
 sample expiring 40 held
 sample expired 40 free
+
+# With "Display over other apps": the invisible window keeps the screen on too, for devices ignoring the wake lock.
+device appops set "$pkg" SYSTEM_ALERT_WINDOW allow
+wake
+device am start -W -n "$pkg/$ns.ui.MainActivity" > /dev/null
+sleep 2
+automation START 300
+sleep 1
+device input keyevent KEYCODE_HOME
+sample app-overlay 60 held
+if ! grep -q "^app-overlay .* overlay=[1-9]" "$out/timeline.txt"; then
+  echo "FAIL app-overlay: the overlay window was never shown" | tee -a "$out/summary.txt"
+  failures=$((failures + 1))
+fi
+automation STOP
+sample overlay-stopped 30 free
+device appops set "$pkg" SYSTEM_ALERT_WINDOW default
 
 device logcat -d -v time > "$out/logcat.txt"
 device dumpsys activity exit-info "$pkg" > "$out/exit-info.txt" || true

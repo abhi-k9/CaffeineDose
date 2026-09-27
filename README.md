@@ -21,6 +21,7 @@ Download the APK from the [latest release](https://github.com/abhi-k9/CaffeineDo
    - keep the screen on for an exact duration, or pick a preset,
    - configure the default duration and the `+` / `−` steps,
    - choose whether turning the screen off stops the timer,
+   - allow *Keep the screen on over other apps*, needed on some phones (see [How it works](#how-it-works)),
    - choose the theme (System, Light, Dark) and Material You dynamic colors,
    - allow or forbid other apps to control the timer,
    - share diagnostics when a timer stops unexpectedly (see below).
@@ -85,9 +86,15 @@ No foreground service type describes this use, so the service uses the
 [`specialUse`](https://developer.android.com/develop/background-work/services/fgs/service-types#special-use) type,
 which has no time limit.
 
+Some devices ignore that wake lock while the app isn't visible: on a Samsung Galaxy S24 Ultra with Android 16, the screen
+turns off after the usual timeout while the lock is held. The window manager, though, always honors
+[`FLAG_KEEP_SCREEN_ON`](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON)
+on a visible window, which is how video players keep the screen on. With the optional *Display over other apps*
+permission, the service also shows an invisible, untouchable 1×1 window with that flag while a timer runs.
+
 The service is the source of truth of the timer: the timer exists only while the service holds the wake lock, both live
-in memory in the same process, and nothing is persisted. If the process dies, the wake lock is released with it: the
-screen can never stay on by accident, and there is nothing to clean up after a crash or a reboot.
+in memory in the same process, and nothing is persisted. If the process dies, the wake lock and the window are gone
+with it: the screen can never stay on by accident, and there is nothing to clean up after a crash or a reboot.
 
 The end of the timer is tracked on the monotonic `elapsedRealtime` clock, so changing the time or the time zone doesn't
 affect a running timer. The wake lock is acquired with a timeout matching the remaining time, as a safety net. When the
