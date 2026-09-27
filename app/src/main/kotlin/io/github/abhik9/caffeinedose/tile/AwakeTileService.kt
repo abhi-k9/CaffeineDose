@@ -17,6 +17,7 @@ import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
+import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 import io.github.abhik9.caffeinedose.system.message
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
@@ -43,7 +44,9 @@ class AwakeTileService : TileService() {
     override fun onStartListening() = render(awakeTimer().current())
 
     override fun onClick() {
-        when (val result = awakeTimer().toggle()) {
+        val result = awakeTimer().toggle()
+        Diagnostics.log(this, TAG, "Tile: $result")
+        when (result) {
             is StartResult.Started -> render(result.timer)
             StartResult.Stopped -> render(null)
             is StartResult.Blocked -> resolve(result.requirement)

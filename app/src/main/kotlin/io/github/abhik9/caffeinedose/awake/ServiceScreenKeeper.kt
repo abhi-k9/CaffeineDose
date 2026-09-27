@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import io.github.abhik9.caffeinedose.core.ScreenKeeper
 import io.github.abhik9.caffeinedose.core.Timer
+import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 
 /**
  * The running timer. It lives in memory only, like the wake lock held by [AwakeService] in the same process: when the
@@ -35,7 +36,7 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
 
     override fun hold(timer: Timer): Boolean {
         val previous = AwakeState.timer
-        Log.i(TAG, "Holding $timer, previous: $previous, pending foreground starts: ${AwakeState.pendingForegroundStarts}")
+        Diagnostics.log(context, TAG, "Holding $timer, previous: $previous, pending starts: ${AwakeState.pendingForegroundStarts}")
         return try {
             // Set first: the service reads it once started, and it may be started right away.
             AwakeState.timer = timer
@@ -51,14 +52,14 @@ internal class ServiceScreenKeeper(private val context: Context) : ScreenKeeper 
             // ForegroundServiceStartNotAllowedException since Android 12, or background start restrictions: e.g. an
             // automation intent received while the app is in the background.
             Log.w(TAG, "Not allowed to hold the screen", e)
+            Diagnostics.log(context, TAG, "Not allowed to hold the screen: $e")
             AwakeState.timer = previous
             false
         }
     }
 
     override fun release() {
-        // With the caller, to find out what ended a timer.
-        Log.i(TAG, "Releasing ${AwakeState.timer}", Throwable("caller"))
+        Diagnostics.log(context, TAG, "Releasing ${AwakeState.timer}")
         AwakeState.timer = null
         // Otherwise, the service stops itself once it has called startForeground(), as the timer is gone.
         if (AwakeState.pendingForegroundStarts == 0) context.stopService(AwakeService.intent(context))

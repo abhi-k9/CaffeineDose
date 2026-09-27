@@ -22,10 +22,22 @@ Download the APK from the [latest release](https://github.com/abhi-k9/CaffeineDo
    - configure the default duration and the `+` / `−` steps,
    - choose whether turning the screen off stops the timer,
    - choose the theme (System, Light, Dark) and Material You dynamic colors,
-   - allow or forbid other apps to control the timer.
+   - allow or forbid other apps to control the timer,
+   - share diagnostics when a timer stops unexpectedly (see below).
 
 While the screen is kept on, the device doesn't lock automatically either: stop the timer, or turn the screen off,
 before leaving the device unattended.
+
+## Diagnostics
+
+Some manufacturers' power management stops apps in ways stock Android doesn't. *Share diagnostics*, in the app, shares
+a short report to help understand it: the relevant settings, why Android last stopped the app
+([`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)), and the latest
+events (timer starts and stops and their source, the service lifecycle, and a heartbeat every 15 seconds while a timer
+runs). It is kept on the device only, see the [privacy policy](PRIVACY.md).
+
+The emulator [device test](.github/workflows/device-test.yml) runs the app on stock Android 14 and 16, and checks second
+by second that the screen stays on while a timer runs.
 
 ## Automation
 

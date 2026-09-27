@@ -19,14 +19,17 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestPermissi
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
+import io.github.abhik9.caffeinedose.diagnostics.Diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 import io.github.abhik9.caffeinedose.system.reportBlocked
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
+import io.github.abhik9.caffeinedose.system.toast
 import io.github.abhik9.caffeinedose.ui.theme.CaffeineDoseTheme
 
 /**
@@ -64,6 +67,19 @@ class MainActivity : ComponentActivity() {
         override fun setDynamicColor(enabled: Boolean) = viewModel.setDynamicColor(enabled)
         override fun setAutomationEnabled(enabled: Boolean) = viewModel.setAutomationEnabled(enabled)
         override fun setStopOnScreenOff(enabled: Boolean) = viewModel.setStopOnScreenOff(enabled)
+
+        override fun shareDiagnostics() {
+            val send = Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.diagnostics_subject))
+                .putExtra(Intent.EXTRA_TEXT, Diagnostics.report(this@MainActivity))
+            startActivity(Intent.createChooser(send, null))
+        }
+
+        override fun clearDiagnostics() {
+            Diagnostics.clear(this@MainActivity)
+            toast(R.string.diagnostics_cleared)
+        }
         override fun resolve(requirement: Requirement) = this@MainActivity.resolve(requirement)
     }
 
