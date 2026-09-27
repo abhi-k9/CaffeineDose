@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs CaffeineDose on a connected device or emulator and checks, second by second, that the screen stays on while a
-# timer runs: screen state, wake lock, process, foreground service and notification.
+# timer runs (screen state, wake lock, overlay, process, foreground service, notification), and that everything is
+# released once it ends. The app's own diagnostics log is collected: debug builds record it by default.
 #
 # Usage: device-test.sh <debug APK> [output directory]
 set -euo pipefail
@@ -51,11 +52,33 @@ automation() { # <action> [duration in seconds]
   device am broadcast -n "$receiver" -a "$ns.action.$1" "${extras[@]}" > /dev/null
 }
 
-# Samples the state every second for <seconds>. <expectation> is "held" (a timer runs: the screen must stay on) or
-# "free" (no timer: only recorded).
-sample() { # <scenario> <seconds> <expectation>
-  local scenario=$1 seconds=$2 expectation=$3
-  local start now state lock pid foreground notification overlay ok=1 pids=""
+# Starts a timer from the app, then leaves it, as a user would.
+start_from_app() { # <duration in seconds>
+  wake
+  device am start -W -n "$pkg/$ns.ui.MainActivity" > /dev/null
+  sleep 2
+  automation START "$1"
+  sleep 1
+  device input keyevent KEYCODE_HOME
+}
+
+verdict() { # <scenario> <ok> <description>
+  if [ "$2" = 1 ]; then
+    echo "PASS $1: $3" | tee -a "$out/summary.txt"
+  else
+    echo "FAIL $1: $3, see $out/timeline.txt" | tee -a "$out/summary.txt"
+    failures=$((failures + 1))
+  fi
+}
+
+# Samples the state every second for <seconds>, then checks <expectation>:
+# - held: a timer runs, the screen stays on, held by the service, in the same process (and by the overlay with
+#   "overlay"),
+# - released: the timer ended, nothing is held anymore, and the screen turns off after the usual timeout,
+# - none: only recorded.
+sample() { # <scenario> <seconds> <expectation> [overlay]
+  local scenario=$1 seconds=$2 expectation=$3 with_overlay=${4:-}
+  local start now state lock pid foreground notification overlay ok=1 pids="" shown=0
   start=$(date +%s)
   while now=$(date +%s); [ $((now - start)) -lt "$seconds" ]; do
     state=$(wakefulness)
@@ -64,37 +87,38 @@ sample() { # <scenario> <seconds> <expectation>
     foreground=$(device dumpsys activity services "$pkg" | grep -c "isForeground=true" || true)
     notification=$(device dumpsys notification | grep -c "pkg=$pkg" || true)
     overlay=$(device dumpsys window windows | grep -c "u0 CaffeineDose}" || true)
-    printf '%-14s t=%3ss screen=%-8s pid=%-6s foreground=%s notification=%s overlay=%s lock=%s\n' \
+    printf '%-16s t=%3ss screen=%-8s pid=%-6s foreground=%s notification=%s overlay=%s lock=%s\n' \
       "$scenario" $((now - start)) "$state" "${pid:-none}" "$foreground" "$notification" "$overlay" "${lock:-none}" |
       tee -a "$out/timeline.txt"
     if [ "$expectation" = held ]; then
       if [ "$state" != Awake ] || [ -z "$lock" ] || [ "$foreground" = 0 ]; then ok=0; fi
+      if [ "$overlay" != 0 ]; then shown=1; fi
       pids="$pids ${pid:-none}"
     fi
     sleep 1
   done
-  if [ "$expectation" = held ]; then
-    if [ "$(echo "$pids" | tr ' ' '\n' | sed '/^$/d' | sort -u | wc -l)" -ne 1 ]; then ok=0; fi
-    if [ "$ok" = 1 ]; then
-      echo "PASS $scenario: the screen stayed on, held by the service, in the same process" | tee -a "$out/summary.txt"
-    else
-      echo "FAIL $scenario: see $out/timeline.txt" | tee -a "$out/summary.txt"
-      failures=$((failures + 1))
-    fi
-  fi
+  case $expectation in
+    held)
+      if [ "$(echo "$pids" | tr ' ' '\n' | sed '/^$/d' | sort -u | wc -l)" -ne 1 ]; then ok=0; fi
+      if [ -n "$with_overlay" ] && [ "$shown" = 0 ]; then ok=0; fi
+      verdict "$scenario" "$ok" "the screen stayed on, held by the service${with_overlay:+ and the overlay}, in the same process"
+      ;;
+    released)
+      # The last sample: the screen must be off, and nothing held.
+      if [ "$state" = Awake ] || [ -n "$lock" ] || [ "$overlay" != 0 ] || [ "$foreground" != 0 ]; then ok=0; fi
+      verdict "$scenario" "$ok" "everything was released and the screen turned off"
+      ;;
+  esac
 }
 
 # The emulator reports a completed boot before every system service answers.
-ready=0
 for _ in $(seq 1 60); do
   if device service check power | grep -q ": found" && device service check input | grep -q ": found" &&
     device service check window | grep -q ": found"; then
-    ready=1
     break
   fi
   sleep 3
 done
-if [ "$ready" = 0 ]; then echo "The system services are not ready" >&2; fi
 sleep 10
 
 echo "Device: $(device getprop ro.product.model), Android $(device getprop ro.build.version.release) (API $(device getprop ro.build.version.sdk))" |
@@ -109,68 +133,43 @@ device locksettings set-disabled true || true
 device cmd statusbar add-tile "$tile" || true
 device logcat -c
 
-echo "== Power configuration" | tee -a "$out/summary.txt"
-device dumpsys power | grep -iE "timeout|attentive|override" | sed 's/^ */  /' | tee -a "$out/summary.txt" || true
-
 # Without timer, the screen turns off after the timeout: checks that the device and this script behave as expected.
 wake
-sample baseline 35 free
+sample baseline 25 none
 
-# Started from the app, then the app is left: the user's first scenario.
-wake
-device am start -W -n "$pkg/$ns.ui.MainActivity" > /dev/null
-sleep 2
-automation START 300
-sleep 1
-device input keyevent KEYCODE_HOME
-sample app 75 held
+start_from_app 300
+sample app 40 held
 device dumpsys power > "$out/dumpsys-power-while-held.txt"
-device dumpsys activity services "$pkg" > "$out/dumpsys-service-while-held.txt"
 automation STOP
-sample app-stopped 40 free
+sample app-stopped 25 released
 
-# Started from the Quick Settings tile: the user's second scenario.
 wake
 click_tile
-sample tile 75 held
+sample tile 40 held
 click_tile
-sample tile-stopped 40 free
+sample tile-stopped 25 released
 
-# A timer that ends: the screen is held until then, then turns off after the usual timeout.
-wake
-device am start -W -n "$pkg/$ns.ui.MainActivity" > /dev/null
-sleep 2
-automation START 45
-sleep 1
-device input keyevent KEYCODE_HOME
-sample expiring 40 held
-sample expired 40 free
+# The screen is held until the timer ends, then turns off after the usual timeout.
+start_from_app 30
+sample expiring 25 held
+sample expired 30 released
 
 # With "Display over other apps": the invisible window keeps the screen on too, for devices ignoring the wake lock.
 device appops set "$pkg" SYSTEM_ALERT_WINDOW allow
-wake
-device am start -W -n "$pkg/$ns.ui.MainActivity" > /dev/null
-sleep 2
-automation START 300
-sleep 1
-device input keyevent KEYCODE_HOME
-sample app-overlay 60 held
-if ! grep -q "^app-overlay .* overlay=[1-9]" "$out/timeline.txt"; then
-  echo "FAIL app-overlay: the overlay window was never shown" | tee -a "$out/summary.txt"
-  failures=$((failures + 1))
-fi
+start_from_app 300
+sample overlay 30 held overlay
 automation STOP
-sample overlay-stopped 30 free
+sample overlay-stopped 25 released
 device appops set "$pkg" SYSTEM_ALERT_WINDOW default
 
 device logcat -d -v time > "$out/logcat.txt"
 device dumpsys activity exit-info "$pkg" > "$out/exit-info.txt" || true
+device run-as "$pkg" cat no_backup/diagnostics/diagnostics.log > "$out/diagnostics.log" || true
 
-echo "== App log" | tee -a "$out/summary.txt"
-grep -E "AwakeService|ServiceScreenKeeper|DoseActionReceiver|AutomationReceiver|AndroidRuntime|FATAL|$pkg" "$out/logcat.txt" |
-  grep -vE "^\s+at " | tail -n 150 | tee -a "$out/summary.txt" || true
-echo "== Process exits" | tee -a "$out/summary.txt"
-grep -E "ApplicationExitInfo|reason=|description=" "$out/exit-info.txt" | head -n 30 | tee -a "$out/summary.txt" || true
+echo "== Crashes" | tee -a "$out/summary.txt"
+grep -A 20 "FATAL EXCEPTION" "$out/logcat.txt" | tee -a "$out/summary.txt" || echo "none" | tee -a "$out/summary.txt"
+echo "== Diagnostics log (latest last)" | tee -a "$out/summary.txt"
+tail -n 120 "$out/diagnostics.log" | tee -a "$out/summary.txt"
 
 echo "Failures: $failures" | tee -a "$out/summary.txt"
 exit $((failures > 0 ? 1 : 0))

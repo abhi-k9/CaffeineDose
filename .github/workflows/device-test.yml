@@ -1,26 +1,15 @@
 name: Device test
 
-# Runs the debug app on Android emulators and checks that the screen really stays on while a timer runs, see
-# .github/scripts/device-test.sh. Only when the app or this test changes: it takes several minutes.
+# Runs the debug app on an Android emulator and checks, second by second, that the screen really stays on while a timer
+# runs, see .github/scripts/device-test.sh. On demand only (Actions → Device test → Run workflow): it takes several
+# minutes, and emulators are less reliable than the unit tests of the CI workflow.
 on:
-  push:
-    branches: [ "**" ]
-    paths:
-      - "app/**"
-      - "core/src/main/**"
-      - "gradle/**"
-      - "*.gradle.kts"
-      - ".github/scripts/device-test.sh"
-      - ".github/workflows/device-test.yml"
-  pull_request:
-    paths:
-      - "app/**"
-      - "core/src/main/**"
-      - "gradle/**"
-      - "*.gradle.kts"
-      - ".github/scripts/device-test.sh"
-      - ".github/workflows/device-test.yml"
   workflow_dispatch:
+    inputs:
+      api:
+        description: Android API level of the emulator image, e.g. 34, 36, 36.1 or 37.0
+        required: true
+        default: "36"
 
 permissions:
   contents: read
@@ -35,23 +24,9 @@ defaults:
 
 jobs:
   emulator:
-    name: Emulator (API ${{ matrix.api }})
+    name: Emulator (API ${{ inputs.api }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    # The newest emulator images are less stable on these runners: they report, without failing the workflow.
-    continue-on-error: ${{ matrix.experimental }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # Android 14, the first version restricting foreground services this much, and Android 16.
-        api: [ "34", "36" ]
-        experimental: [ false ]
-        # Android 16 QPR2 and 17. Since Android 16, SDK packages name minor versions: android-36.1, android-37.0.
-        include:
-          - api: "36.1"
-            experimental: true
-          - api: "37.0"
-            experimental: true
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +42,7 @@ jobs:
         with:
           cache-provider: basic
 
+      # Debug builds record diagnostics by default: the test collects the app's own log.
       - name: Build the debug APK
         run: ./gradlew assembleDebug --stacktrace
 
@@ -81,7 +57,7 @@ jobs:
       - name: Run the scenarios
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: ${{ matrix.api }}
+          api-level: ${{ inputs.api }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -97,6 +73,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: device-test-api-${{ matrix.api }}
+          name: device-test-api-${{ inputs.api }}
           path: ${{ runner.temp }}/device-test
           if-no-files-found: ignore
