@@ -1,0 +1,3 @@
+- Clearer message when notifications are off, the same in the app, the tile and automation.
+- Diagnostics also record settings screens that can't be opened, invalid automation requests and failed exports.
+- Simpler code, with the same behavior.
