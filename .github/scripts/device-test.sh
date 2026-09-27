@@ -84,6 +84,19 @@ sample() { # <scenario> <seconds> <expectation>
   fi
 }
 
+# The emulator reports a completed boot before every system service answers.
+ready=0
+for _ in $(seq 1 60); do
+  if device service check power | grep -q ": found" && device service check input | grep -q ": found" &&
+    device service check window | grep -q ": found"; then
+    ready=1
+    break
+  fi
+  sleep 3
+done
+if [ "$ready" = 0 ]; then echo "The system services are not ready" >&2; fi
+sleep 10
+
 echo "Device: $(device getprop ro.product.model), Android $(device getprop ro.build.version.release) (API $(device getprop ro.build.version.sdk))" |
   tee "$out/summary.txt"
 
