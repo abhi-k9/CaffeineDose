@@ -6,7 +6,7 @@ import kotlin.time.Duration
 sealed interface StartResult {
     data class Started(val timer: Timer) : StartResult
 
-    /** The timer has been stopped (a non positive duration was requested). */
+    /** The timer has been stopped, e.g. a non positive duration was requested. */
     data object Stopped : StartResult
 
     /** Nothing changed: the timer can't run until [requirement] is resolved. */
@@ -43,19 +43,20 @@ class AwakeTimer(
 
     /**
      * Starts a timer of [duration] (capped to [MAX_TIMER_DURATION]), replacing the running one.
-     * A non positive [duration] stops the timer.
+     * A [duration] under a millisecond (e.g. zero or negative) stops the timer.
      */
     fun start(duration: Duration = settings().initial): StartResult = doStart(duration).also { result ->
         log.record { "start($duration): $result" }
     }
 
     private fun doStart(duration: Duration): StartResult {
-        if (!duration.isPositive()) {
+        // In whole milliseconds, the resolution of the clocks: a shorter timer would have ended already.
+        val millis = duration.coerceAtMost(MAX_TIMER_DURATION).inWholeMilliseconds
+        if (millis <= 0) {
             stop()
             return StartResult.Stopped
         }
         missingRequirement()?.let { return StartResult.Blocked(it) }
-        val millis = duration.coerceAtMost(MAX_TIMER_DURATION).inWholeMilliseconds
         val timer = Timer(deadline = clock.elapsedMillis() + millis, endsAt = clock.wallMillis() + millis)
         if (!keeper.hold(timer)) return StartResult.Refused
         onChange()

@@ -8,6 +8,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -53,6 +54,14 @@ class AwakeTimerTest {
         fun `non positive duration stops the timer`() {
             timer.start()
             assertEquals(StartResult.Stopped, timer.start(Duration.ZERO))
+            assertNull(keeper.held)
+            assertEquals(1, keeper.releases)
+        }
+
+        @Test
+        fun `duration under a millisecond stops the timer`() {
+            timer.start()
+            assertEquals(StartResult.Stopped, timer.start(500.microseconds))
             assertNull(keeper.held)
             assertEquals(1, keeper.releases)
         }

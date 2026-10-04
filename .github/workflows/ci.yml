@@ -1,9 +1,11 @@
 name: CI
 
-# Every push, on any branch (main included): pull requests from this repository's branches, Dependabot's included, get
-# their checks from the push of their head commit, rather than running everything twice.
+# Every push to a branch (main included): pull requests from this repository's branches, Dependabot's included, get
+# their checks from the push of their head commit, rather than running everything twice. Release tags are built by the
+# release workflow.
 on:
   push:
+    branches: [ "**" ]
   workflow_dispatch:
 
 # Least privilege: jobs only read the repository, unless stated otherwise.

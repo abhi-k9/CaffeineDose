@@ -68,7 +68,7 @@ class AwakeService : Service() {
     }
 
     private val handler = Handler(Looper.getMainLooper())
-    private val check = Runnable(::update)
+    private val check = Runnable { update() }
     private val heartbeat: Runnable = object : Runnable {
         override fun run() {
             val timer = held ?: return
@@ -136,11 +136,14 @@ class AwakeService : Service() {
         if (foregroundRequired) AwakeState.pendingForegroundStarts = (AwakeState.pendingForegroundStarts - 1).coerceAtLeast(0)
         // Required right away after `startForegroundService()`, even if the timer has been released since: stopping
         // before would crash the app. The notification shows the requested timer until update() applies the current one.
-        if (foregroundRequired || !inForeground) {
+        val entersForeground = foregroundRequired || !inForeground
+        if (entersForeground) {
             val requested = intent?.timer() ?: AwakeState.timer
             enterForeground(requested ?: Timer(deadline = SystemClock.elapsedRealtime(), endsAt = System.currentTimeMillis()))
         }
-        update()
+        // Every start displays the timer, even an unchanged one: e.g. to refresh the "+" and "−" actions after their
+        // steps changed, or once "−" no longer applies. startForeground() has just done it.
+        update(repost = !entersForeground)
         // Not restarted by the system: the timer is gone with the process.
         return START_NOT_STICKY
     }
@@ -148,8 +151,9 @@ class AwakeService : Service() {
     /**
      * Applies the current timer: the notification, the wake lock and the next check. Every signal ends up here, and the
      * remaining time is always computed on the `elapsedRealtime` clock, so a delayed check can't extend the timer.
+     * @param repost whether to post the notification again even when the timer didn't change.
      */
-    private fun update() {
+    private fun update(repost: Boolean = false) {
         handler.removeCallbacks(check)
         val timer = AwakeState.timer
         if (timer == null) {
@@ -163,7 +167,7 @@ class AwakeService : Service() {
             record { "expired" }
             return
         }
-        if (timer != held) {
+        if (repost || timer != held) {
             held = timer
             getSystemService(NotificationManager::class.java).notify(DoseNotification.ID, DoseNotification.build(this, timer))
         }

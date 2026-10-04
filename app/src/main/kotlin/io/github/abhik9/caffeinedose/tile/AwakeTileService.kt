@@ -10,7 +10,6 @@ import android.os.Build.VERSION_CODES.Q
 import android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import android.text.format.DateFormat
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Requirement
@@ -21,7 +20,7 @@ import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
 import io.github.abhik9.caffeinedose.system.title
 import io.github.abhik9.caffeinedose.system.toast
-import java.util.Date
+import io.github.abhik9.caffeinedose.system.untilText
 
 /** Asks the system to refresh the tile. */
 fun Context.requestTileUpdate() {
@@ -47,7 +46,7 @@ class AwakeTileService : TileService() {
             StartResult.Stopped -> render(null)
             is StartResult.Blocked -> resolve(result.requirement)
             // Some devices don't let a tile start a foreground service: start it from an activity instead.
-            StartResult.Refused -> startActivityAndCollapseCompat(StartActivity.intent(this))
+            StartResult.Refused -> whenUnlocked { startActivityAndCollapseCompat(StartActivity.intent(this)) }
         }
     }
 
@@ -55,25 +54,25 @@ class AwakeTileService : TileService() {
         val tile = qsTile ?: return
         tile.state = if (timer == null) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
         if (SDK_INT >= Q) {
-            tile.subtitle = if (timer == null) {
-                getString(R.string.tile_subtitle)
-            } else {
-                getString(R.string.until, DateFormat.getTimeFormat(this).format(Date(timer.endsAt)))
-            }
+            tile.subtitle = if (timer == null) getString(R.string.tile_subtitle) else untilText(timer)
         }
         tile.updateTile()
     }
 
     private fun resolve(requirement: Requirement) {
         toast(requirement.title)
-        startSettings(settingsIntent(requirement).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), ::startActivityAndCollapseCompat)
+        // Within the fallback handling of startSettings(), also when it runs after unlocking.
+        whenUnlocked { startSettings(settingsIntent(requirement), start = ::startActivityAndCollapseCompat) }
     }
+
+    /** Activities can't be displayed on top of the keyguard: the device must be unlocked first. */
+    private fun whenUnlocked(action: () -> Unit) = if (isLocked) unlockAndRun { action() } else action()
 
     @SuppressLint("StartActivityAndCollapseDeprecated")
     @Suppress("DEPRECATION")
     private fun startActivityAndCollapseCompat(intent: Intent) {
-        // Activities can't be displayed on top of the keyguard: the device must be unlocked first.
-        if (isLocked) return unlockAndRun { startActivityAndCollapseCompat(intent) }
+        // Started from a service: there is no task to start it in.
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (SDK_INT >= UPSIDE_DOWN_CAKE) {
             startActivityAndCollapse(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE))
         } else {

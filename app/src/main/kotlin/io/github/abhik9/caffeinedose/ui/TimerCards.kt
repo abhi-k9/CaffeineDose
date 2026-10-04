@@ -1,6 +1,5 @@
 package io.github.abhik9.caffeinedose.ui
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -38,8 +37,8 @@ import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.core.ceilMinutes
 import io.github.abhik9.caffeinedose.core.formatCountdown
+import io.github.abhik9.caffeinedose.system.endTime
 import kotlinx.coroutines.delay
-import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -97,7 +96,7 @@ internal fun TimerCard(state: MainUiState, actions: MainActions, elapsedNow: () 
         val remaining = rememberRemaining(timer, elapsedNow)
         val remainingDescription = stringResource(R.string.timer_remaining_description, formatMinutes(ceilMinutes(remaining)))
         val context = LocalContext.current
-        val endsAt = remember(timer.endsAt) { DateFormat.getTimeFormat(context).format(Date(timer.endsAt)) }
+        val endsAt = remember(timer.endsAt) { context.endTime(timer) }
         val increment = state.settings.minutes(DurationSetting.INCREMENT)
         val decrement = state.settings.minutes(DurationSetting.DECREMENT)
 

@@ -1,0 +1,3 @@
+- The notification's "+" and "−" buttons now update as soon as you change their steps, and "−" disappears once it no longer applies.
+- Denying the notification permission once no longer sends you to the system settings: they only open once Android stops asking.
+- The Quick Settings tile opens the settings more reliably, including after unlocking.

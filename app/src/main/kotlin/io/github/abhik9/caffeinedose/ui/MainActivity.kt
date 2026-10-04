@@ -53,8 +53,9 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission = registerForActivityResult(RequestPermission()) { granted ->
         viewModel.refresh()
         diagnostics.record { "permission: notifications granted=$granted" }
-        // Denied without any prompt (e.g. after two refusals): fall back to the settings.
-        if (!granted) openSettings(Requirement.NOTIFICATIONS)
+        // Denied for good (e.g. after two refusals), so the system no longer prompts: only the settings can grant it.
+        val deniedForGood = SDK_INT >= TIRAMISU && !shouldShowRequestPermissionRationale(POST_NOTIFICATIONS)
+        if (!granted && deniedForGood) openSettings(Requirement.NOTIFICATIONS)
     }
 
     private val exportDestination = registerForActivityResult(CreateDocument("text/plain")) { destination ->

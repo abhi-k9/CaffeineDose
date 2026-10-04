@@ -13,13 +13,12 @@ import android.os.Build.VERSION_CODES.BAKLAVA
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES_FULL
 import android.os.SystemClock
-import android.text.format.DateFormat
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.settings.SettingsStore
+import io.github.abhik9.caffeinedose.system.untilText
 import io.github.abhik9.caffeinedose.ui.MainActivity
-import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
@@ -57,7 +56,7 @@ internal object DoseNotification {
             .setSmallIcon(R.drawable.ic_tile)
             // A title is required for Live Updates: https://developer.android.com/develop/ui/views/notifications/live-update
             .setContentTitle(context.getString(R.string.notification_title))
-            .setSubText(context.getString(R.string.until, DateFormat.getTimeFormat(context).format(Date(timer.endsAt))))
+            .setSubText(context.untilText(timer))
             .setShowWhen(true)
             .setWhen(timer.endsAt)
             .setUsesChronometer(true)
