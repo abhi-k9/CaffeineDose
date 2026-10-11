@@ -63,7 +63,7 @@ jobs:
           java -jar "$RUNNER_TEMP/ktlint.jar" --relative "**/*.kt" "**/*.kts"
 
       # Also validates the Gradle wrapper checksum.
-      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # The MIT licensed cache implementation, instead of the default proprietary one.
           cache-provider: basic
@@ -106,6 +106,6 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
