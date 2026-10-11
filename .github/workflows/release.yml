@@ -3,7 +3,7 @@ name: Release
 # Builds a signed release APK and publishes it as a GitHub Release, either:
 # - when a `vX.Y.Z` tag pointing to a commit of `main` is pushed,
 # - or when run manually (Actions → Release → Run workflow) on `main`: the tag is then created from the app version.
-# Requires the repository secrets described in the README ("Releasing").
+# Requires the repository secrets described in RELEASING.md ("Signing").
 on:
   push:
     tags: [ "v*" ]
@@ -91,7 +91,7 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::Missing CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64 secret, see README (Releasing)"
+            echo "::error::Missing CAFFEINEDOSE_SIGNING_KEYSTORE_BASE64 secret, see RELEASING.md (Signing)"
             exit 1
           fi
           umask 077
