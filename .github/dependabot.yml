@@ -14,7 +14,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     # Supply chain: a new version is only proposed once it has been public for a week.
     cooldown:
       default-days: 7
@@ -26,7 +26,7 @@ updates:
     directory: /
     registries: "*"
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
     groups:

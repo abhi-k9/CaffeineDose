@@ -80,8 +80,9 @@ platform APIs, next to the Jetpack Compose UI.
 ## Building
 
 Requires JDK 17+ and the Android SDK (API 37). `./gradlew assembleDebug test lint` builds, tests and lints (lint and
-Kotlin warnings are errors); CI also runs [ktlint](https://pinterest.github.io/ktlint/) and
-[zizmor](https://docs.zizmor.sh/) on every push. The [device test](.github/workflows/device-test.yml) (Actions → Device
+Kotlin warnings are errors). CI does the same, plus [ktlint](https://pinterest.github.io/ktlint/), on pushes to `main` and
+pull requests that change more than documentation, and [zizmor](https://docs.zizmor.sh/) when workflows change; other
+branches are checked on demand (Actions → CI → Run workflow). The [device test](.github/workflows/device-test.yml) (Actions → Device
 test → Run workflow) checks on an emulator, second by second, that the screen really stays on, then is released;
 [its script](.github/scripts/device-test.sh) also runs against a connected device.
 
