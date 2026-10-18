@@ -5,6 +5,10 @@
 
     <!-- Quick Settings tile and home screen widget -->
     <string name="shortcut_idle">Tap to keep awake</string>
+    <string name="widget_label">Keep awake</string>
+    <string name="widget_info_description">Keep the screen on for the default duration, or let it turn off again, with a tap.</string>
+    <string name="widget_description_off">CaffeineDose: the screen turns off as usual. Tap to keep it on.</string>
+    <string name="widget_description_on">CaffeineDose: the screen stays on until %1$s. Tap to let it turn off.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">Screen kept on</string>

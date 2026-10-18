@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen widget preview, in the widget picker before Android 12 (since then, the widget layout itself). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_preview_background" />
+            <corners android:radius="16dp" />
+            <size
+                android:width="72dp"
+                android:height="72dp" />
+        </shape>
+    </item>
+    <item
+        android:width="36dp"
+        android:height="36dp"
+        android:drawable="@drawable/ic_tile"
+        android:gravity="center" />
+</layer-list>

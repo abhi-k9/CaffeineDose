@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dynamic colors (Material You): primary container when on, surface variant when off. -->
+    <color name="widget_on_background">@android:color/system_accent1_100</color>
+    <color name="widget_on_content">@android:color/system_accent1_900</color>
+    <color name="widget_off_background">@android:color/system_neutral2_100</color>
+    <color name="widget_off_content">@android:color/system_neutral2_700</color>
+</resources>

@@ -57,7 +57,7 @@ val Requirement.explanation: Int
 /** When [timer] ends, in the user's time format (12 or 24 hours). */
 fun Context.endTime(timer: Timer): String = DateFormat.getTimeFormat(this).format(Date(timer.endsAt))
 
-/** "Until 10:42", for the tile and the notification. */
+/** "Until 10:42", for the notification and the shortcuts (Quick Settings tile, home screen widget). */
 fun Context.untilText(timer: Timer): String = getString(R.string.until, endTime(timer))
 
 fun Context.toast(@StringRes message: Int) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()

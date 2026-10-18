@@ -61,6 +61,25 @@
                 android:value="true" />
         </service>
 
+        <!-- Home screen widget, see AwakeWidget.kt. Exported: the launcher and the system send it the widget updates. -->
+        <receiver
+            android:name=".widget.AwakeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_label"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/awake_widget_info" />
+        </receiver>
+
+        <!-- Widget taps: only reachable through the widget's PendingIntent. -->
+        <receiver
+            android:name=".widget.WidgetToggleReceiver"
+            android:exported="false" />
+
         <!-- No foreground service type fits "keep the screen on": specialUse, which has no time limit. -->
         <service
             android:name=".awake.AwakeService"
