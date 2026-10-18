@@ -12,6 +12,7 @@ ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it ru
 ## Usage
 
 - **Quick Settings tile**: tap to keep the screen on for the default duration, tap again to stop.
+- **Home screen widget**: the same as the tile, from the home screen. 1×1 by default, it shows more once resized.
 - **Notification**: extend, reduce or stop the timer. Dismissing it (possible since Android 14) stops the timer, and so
   does turning the screen off (e.g. with the power button), unless disabled in the settings.
 - **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the
@@ -71,7 +72,8 @@ leaves the device unless exported (see the [privacy policy](PRIVACY.md)).
   The wake lock times out at the deadline as a safety net, and is released with
   [`ON_AFTER_RELEASE`](https://developer.android.com/reference/android/os/PowerManager#ON_AFTER_RELEASE): the screen then
   turns off after the usual timeout, instead of right away.
-- Where a tile isn't allowed to start a foreground service, it starts it from an invisible activity instead.
+- Where the tile or the widget isn't allowed to start a foreground service, it starts it from an invisible activity
+  instead.
 
 The `:core` module holds the logic in pure Kotlin, unit tested on the JVM: `AwakeTimer`, the settings, durations and the
 automation API. It defines small interfaces (`ScreenKeeper`, `DeviceClock`, `EventLog`) that `:app` implements with the
