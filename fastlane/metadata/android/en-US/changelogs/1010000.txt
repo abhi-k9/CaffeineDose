@@ -1,0 +1,1 @@
+- New home screen widget: tap it to keep the screen on, or to let it turn off again, like the Quick Settings tile. It shows until when the screen stays on, and more once resized.
