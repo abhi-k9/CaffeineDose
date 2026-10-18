@@ -38,9 +38,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Invisible: starts the default timer from the foreground when the tile is not allowed to. Not exported. -->
+        <!-- Invisible: starts the default timer from the foreground when a shortcut (tile, widget) is not allowed to. Not exported. -->
         <activity
-            android:name=".tile.StartActivity"
+            android:name=".shortcut.StartActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:noHistory="true"

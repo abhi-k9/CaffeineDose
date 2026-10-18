@@ -3,8 +3,8 @@
     <!-- When the running timer ends: tile, notification and app -->
     <string name="until">Until %1$s</string>
 
-    <!-- Quick Settings tile -->
-    <string name="tile_subtitle">Tap to keep awake</string>
+    <!-- Quick Settings tile and home screen widget -->
+    <string name="shortcut_idle">Tap to keep awake</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">Screen kept on</string>

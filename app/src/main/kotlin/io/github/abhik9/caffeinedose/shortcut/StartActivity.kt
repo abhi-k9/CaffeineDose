@@ -1,4 +1,4 @@
-package io.github.abhik9.caffeinedose.tile
+package io.github.abhik9.caffeinedose.shortcut
 
 import android.app.Activity
 import android.content.Context
@@ -11,9 +11,9 @@ import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
 
 /**
- * Invisible activity starting the default timer, for the [AwakeTileService] when it is not allowed to start a
- * foreground service itself: a visible activity always is. Not exported, so other apps can't bypass the automation
- * setting through it.
+ * Invisible activity starting the default timer, for a shortcut (the Quick Settings tile, the home screen widget) that is
+ * not allowed to start a foreground service itself: a visible activity always is. Not exported, so other apps can't
+ * bypass the automation setting through it.
  */
 class StartActivity : Activity() {
 
