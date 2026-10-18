@@ -7,7 +7,7 @@ import io.github.abhik9.caffeinedose.core.AwakeTimer
 import io.github.abhik9.caffeinedose.core.DeviceClock
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
-import io.github.abhik9.caffeinedose.tile.requestTileUpdate
+import io.github.abhik9.caffeinedose.shortcut.refreshShortcuts
 
 /** Extra holding a [io.github.abhik9.caffeinedose.core.Timer.deadline] in intents. */
 internal const val EXTRA_DEADLINE = "io.github.abhik9.caffeinedose.extra.DEADLINE"
@@ -28,7 +28,7 @@ fun Context.awakeTimer(): AwakeTimer {
         keeper = ServiceScreenKeeper(context),
         clock = SystemDeviceClock,
         settings = settings::timerSettings,
-        onChange = context::requestTileUpdate,
+        onChange = context::refreshShortcuts,
         log = context.diagnostics,
     )
 }

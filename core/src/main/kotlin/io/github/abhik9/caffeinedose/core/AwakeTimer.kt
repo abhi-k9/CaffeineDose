@@ -30,7 +30,7 @@ class AwakeTimer(
     private val keeper: ScreenKeeper,
     private val clock: DeviceClock,
     private val settings: () -> TimerSettings,
-    /** Called after every change of the timer, e.g. to refresh the Quick Settings tile. */
+    /** Called after every change of the timer, including when it ends: e.g. to refresh the tile and the widgets. */
     private val onChange: () -> Unit = {},
     private val log: EventLog = EventLog.NONE,
 ) {

@@ -21,7 +21,7 @@ import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
-import io.github.abhik9.caffeinedose.tile.requestTileUpdate
+import io.github.abhik9.caffeinedose.shortcut.refreshShortcuts
 
 /**
  * Keeps the screen on until the deadline of the [AwakeState.timer], with a screen wake lock, and a [ScreenOverlay] when
@@ -217,7 +217,7 @@ class AwakeService : Service() {
         // is kept, it restarts this service.
         if (held != null && AwakeState.timer == held) {
             AwakeState.timer = null
-            requestTileUpdate()
+            refreshShortcuts()
         }
         super.onDestroy()
     }

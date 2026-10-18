@@ -2,8 +2,6 @@ package io.github.abhik9.caffeinedose.tile
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
@@ -16,16 +14,6 @@ import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.shortcut.ShortcutHost
 import io.github.abhik9.caffeinedose.shortcut.shortcutStateText
 import io.github.abhik9.caffeinedose.shortcut.toggleTimer
-
-/** Asks the system to refresh the tile. */
-fun Context.requestTileUpdate() {
-    try {
-        TileService.requestListeningState(this, ComponentName(this, AwakeTileService::class.java))
-    } catch (e: RuntimeException) {
-        // Refused on some devices while the app is in the background: the tile refreshes when it becomes visible anyway.
-        diagnostics.warn("tile: update refused", e)
-    }
-}
 
 /**
  * Quick Settings tile: tap to keep the screen on for the default duration, or to stop the running timer.

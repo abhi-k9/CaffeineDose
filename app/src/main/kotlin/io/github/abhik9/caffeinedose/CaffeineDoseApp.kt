@@ -3,6 +3,7 @@ package io.github.abhik9.caffeinedose
 import android.app.Application
 import io.github.abhik9.caffeinedose.awake.DoseNotification
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
+import io.github.abhik9.caffeinedose.widget.AwakeWidget
 
 class CaffeineDoseApp : Application() {
 
@@ -10,6 +11,8 @@ class CaffeineDoseApp : Application() {
         super.onCreate()
         recordCrashes()
         DoseNotification.createChannel(this)
+        // A new process has no timer: the widgets may still show the one of a process the system ended.
+        AwakeWidget.updateAll(this)
     }
 
     /** Crashes are recorded in the diagnostics log (when enabled), then handled as usual. */

@@ -1,17 +1,22 @@
 package io.github.abhik9.caffeinedose.shortcut
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.service.quicksettings.TileService
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.ShortcutReaction
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.core.shortcutReaction
+import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
 import io.github.abhik9.caffeinedose.system.title
 import io.github.abhik9.caffeinedose.system.toast
 import io.github.abhik9.caffeinedose.system.untilText
+import io.github.abhik9.caffeinedose.tile.AwakeTileService
+import io.github.abhik9.caffeinedose.widget.AwakeWidget
 
 /**
  * A shortcut to the timer: the Quick Settings tile or the home screen widget. Only what differs between them is here,
@@ -42,6 +47,20 @@ fun Context.toggleTimer(host: ShortcutHost) {
         // Some devices don't let a shortcut start a foreground service: start it from an activity instead.
         ShortcutReaction.StartFromForeground -> host.whenUnlocked { host.launch(StartActivity.intent(this)) }
     }
+}
+
+/**
+ * Shows the current timer on every shortcut: the Quick Settings tile and the home screen widgets. Called after every
+ * change of the timer, including when it ends on its own. Never throws.
+ */
+fun Context.refreshShortcuts() {
+    try {
+        TileService.requestListeningState(this, ComponentName(this, AwakeTileService::class.java))
+    } catch (e: RuntimeException) {
+        // Refused on some devices while the app is in the background: the tile refreshes when it becomes visible anyway.
+        diagnostics.warn("tile: update refused", e)
+    }
+    AwakeWidget.updateAll(this)
 }
 
 /** What a shortcut says about [timer]: how to start one, or when it ends. */
