@@ -58,13 +58,15 @@ val Requirement.explanation: Int
 /** When [timer] ends, in the user's time format (12 or 24 hours). */
 fun Context.endTime(timer: Timer): String = DateFormat.getTimeFormat(this).format(Date(timer.endsAt))
 
-/** "Until 10:42", for the notification and the shortcuts (Quick Settings tile, home screen widget). */
-fun Context.untilText(timer: Timer): String = getString(R.string.until, endTime(timer))
+/** "Until 10:42", or "Until unplugged", for the notification and the shortcuts (Quick Settings tile, home screen widget). */
+fun Context.untilText(timer: Timer): String =
+    if (timer.untilUnplugged) getString(R.string.until_unplugged) else getString(R.string.until, endTime(timer))
 
 /** Why the power supply doesn't let the screen be kept on. */
 @get:StringRes
 val PowerLimit.message: Int
     get() = when (this) {
+        PowerLimit.UNPLUGGED -> R.string.power_unplugged
         PowerLimit.LOW_BATTERY -> R.string.power_low_battery
         PowerLimit.BATTERY_SAVER -> R.string.power_battery_saver
     }

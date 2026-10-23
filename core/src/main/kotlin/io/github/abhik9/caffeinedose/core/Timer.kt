@@ -20,7 +20,8 @@ interface DeviceClock {
  * @property deadline end of the timer on the monotonic [DeviceClock.elapsedMillis] timeline: immune to wall clock
  * changes, it decides when the screen is released.
  * @property endsAt end of the timer on the [DeviceClock.wallMillis] timeline, for display purposes only.
+ * @property untilUnplugged whether it ends once the charger is unplugged: its [deadline] is then only a safety net.
  */
-data class Timer(val deadline: Long, val endsAt: Long) {
+data class Timer(val deadline: Long, val endsAt: Long, val untilUnplugged: Boolean = false) {
     fun remaining(clock: DeviceClock): Duration = (deadline - clock.elapsedMillis()).milliseconds
 }

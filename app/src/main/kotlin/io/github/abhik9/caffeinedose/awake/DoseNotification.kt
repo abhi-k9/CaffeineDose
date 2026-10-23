@@ -49,7 +49,9 @@ internal object DoseNotification {
         val settings = SettingsStore.from(context)
         val increment = settings.minutes(DurationSetting.INCREMENT)
         val decrement = settings.minutes(DurationSetting.DECREMENT)
-        val canReduce = (timer.deadline - SystemClock.elapsedRealtime()).milliseconds > decrement.minutes
+        // Until unplugged, there is no time to count down, extend or reduce.
+        val timed = !timer.untilUnplugged
+        val canReduce = timed && (timer.deadline - SystemClock.elapsedRealtime()).milliseconds > decrement.minutes
         return Notification.Builder(context, CHANNEL_ID)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -57,16 +59,20 @@ internal object DoseNotification {
             // A title is required for Live Updates: https://developer.android.com/develop/ui/views/notifications/live-update
             .setContentTitle(context.getString(R.string.notification_title))
             .setSubText(context.untilText(timer))
-            .setShowWhen(true)
+            .setShowWhen(timed)
             .setWhen(timer.endsAt)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
+            .setUsesChronometer(timed)
+            .setChronometerCountDown(timed)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(MainActivity.pendingIntent(context))
             // Dismissing the notification (possible since Android 14) stops the timer.
             .setDeleteIntent(DoseActionReceiver.dismissIntent(context, timer.deadline))
-            .addAction(action(context, DoseActionReceiver.ACTION_EXTEND, context.getString(R.string.action_extend, increment)))
+            .apply {
+                if (timed) {
+                    addAction(action(context, DoseActionReceiver.ACTION_EXTEND, context.getString(R.string.action_extend, increment)))
+                }
+            }
             // Hidden rather than ending the timer; it can become stale as time goes by, which AwakeTimer.reduce() handles.
             .apply {
                 if (canReduce) {

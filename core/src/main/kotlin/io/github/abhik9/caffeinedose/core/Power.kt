@@ -22,6 +22,9 @@ interface PowerSource {
 
 /** Why the power supply doesn't let the screen be kept on, or no longer. */
 enum class PowerLimit {
+    /** No charger is plugged in, for a timer that lasts until it is unplugged. */
+    UNPLUGGED,
+
     /** The battery is at or below the level chosen in the settings. */
     LOW_BATTERY,
 

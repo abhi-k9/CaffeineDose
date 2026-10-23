@@ -2,6 +2,7 @@
     <string name="app_name">CaffeineDose</string>
     <!-- When the running timer ends: tile, notification and app -->
     <string name="until">Until %1$s</string>
+    <string name="until_unplugged">Until unplugged</string>
 
     <!-- Quick Settings tile and home screen widget -->
     <string name="shortcut_idle">Tap to keep awake</string>
@@ -9,6 +10,7 @@
     <string name="widget_info_description">Keep the screen on for the default duration, or let it turn off again, with a tap.</string>
     <string name="widget_description_off">CaffeineDose: the screen turns off as usual. Tap to keep it on.</string>
     <string name="widget_description_on">CaffeineDose: the screen stays on until %1$s. Tap to let it turn off.</string>
+    <string name="widget_description_unplugged">CaffeineDose: the screen stays on until the charger is unplugged. Tap to let it turn off.</string>
 
     <!-- Notification -->
     <string name="notification_channel_name">Screen kept on</string>
@@ -21,11 +23,13 @@
     <string name="action_stop">Stop</string>
     <string name="action_start">Keep awake for %1$s</string>
     <string name="action_set">Set to %1$s</string>
+    <string name="action_start_while_charging">Keep awake while charging</string>
 
     <!-- Main screen -->
     <string name="timer_idle_title">Screen timeout is normal</string>
     <string name="timer_idle_body">Keep the screen on for a while below, or from the Quick Settings tile.</string>
     <string name="timer_remaining">Screen stays on for</string>
+    <string name="timer_while_charging_title">Screen stays on while charging</string>
     <string name="timer_remaining_description">%1$s left</string>
     <string name="start_timer_title">Keep the screen on</string>
     <string name="start_timer_title_running">Change the duration</string>
@@ -57,6 +61,7 @@
     <string name="unit_percent">%</string>
     <string name="battery_saver_title">Stop when Battery Saver turns on</string>
     <string name="battery_saver_description">Lets the screen turn off once Battery Saver is on, unless the phone is charging.</string>
+    <string name="power_unplugged">The screen isn’t kept on: no charger is plugged in.</string>
     <string name="power_low_battery">The screen isn’t kept on: the battery is low.</string>
     <string name="power_battery_saver">The screen isn’t kept on: Battery Saver is on.</string>
 

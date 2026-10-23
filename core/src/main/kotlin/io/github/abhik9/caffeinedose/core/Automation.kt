@@ -9,6 +9,7 @@ import kotlin.time.Duration
 object Automation {
     private const val PREFIX = "io.github.abhik9.caffeinedose.action."
     const val ACTION_START = PREFIX + "START"
+    const val ACTION_START_WHILE_CHARGING = PREFIX + "START_WHILE_CHARGING"
     const val ACTION_STOP = PREFIX + "STOP"
     const val ACTION_TOGGLE = PREFIX + "TOGGLE"
     const val ACTION_UPDATE = PREFIX + "UPDATE"
@@ -26,6 +27,7 @@ object Automation {
         val duration = durationSeconds?.let(::durationOfSeconds)
         return when (action) {
             ACTION_START -> TimerCommand.Start(duration)
+            ACTION_START_WHILE_CHARGING -> TimerCommand.StartUntilUnplugged
             ACTION_STOP -> TimerCommand.Stop
             ACTION_TOGGLE -> TimerCommand.Toggle
             ACTION_UPDATE -> TimerCommand.Adjust(duration ?: Duration.ZERO)

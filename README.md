@@ -18,6 +18,9 @@ ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it ru
 - **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the
   default duration and the `+` / `−` steps, the behavior, the theme, automation and diagnostics.
 
+**While charging**: keep the screen on until the charger is unplugged (for at most 24 hours), from the app, with
+automation, or as a step of the tile and widget.
+
 **Battery** (optional, in the app settings): let the screen turn off once the battery drops to a level of your choice
 (15% by default), or when Battery Saver turns on. Neither applies while the phone is charging.
 
@@ -36,6 +39,7 @@ builds). This can be turned off in the app settings.
 | Action (`io.github.abhik9.caffeinedose.action.…`) | Effect                                                         |
 |---------------------------------------------------|----------------------------------------------------------------|
 | `START`                                           | Keeps the screen on for `duration` seconds, or the default     |
+| `START_WHILE_CHARGING`                            | Keeps the screen on until the charger is unplugged             |
 | `UPDATE`                                          | Adds `duration` seconds (can be negative) to the running timer |
 | `INCREMENT` / `DECREMENT`                         | Extends / reduces the running timer by the configured step     |
 | `TOGGLE`                                          | Starts the default timer, or stops the running one             |

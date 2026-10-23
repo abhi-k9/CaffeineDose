@@ -130,6 +130,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application), M
 
     override fun start(minutes: Int) = perform("start $minutes min") { timer.start(minutes.minutes) }
 
+    override fun startWhileCharging() = perform("start while charging") { timer.startUntilUnplugged() }
+
     override fun stop() = perform("stop") {
         timer.stop()
         null

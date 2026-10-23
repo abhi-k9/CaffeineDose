@@ -3,8 +3,10 @@ package io.github.abhik9.caffeinedose.core
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
 class PowerTest {
@@ -78,6 +80,62 @@ class PowerTest {
             power.level = 5
             assertNull(timer.checkPower())
             assertEquals(0, keeper.releases)
+        }
+    }
+
+    @Nested
+    inner class UntilUnplugged {
+        private val keeper = FakeKeeper()
+        private val clock = FakeClock()
+        private val timer = AwakeTimer(keeper, clock, { TimerSettings.DEFAULT }, power = power)
+
+        @Test
+        fun `needs a charger`() {
+            assertEquals(StartResult.Declined(PowerLimit.UNPLUGGED), timer.startUntilUnplugged())
+            assertNull(keeper.held)
+        }
+
+        @Test
+        fun `holds the screen at most for the longest timer`() {
+            power.pluggedIn = true
+            val started = assertIs<StartResult.Started>(timer.startUntilUnplugged()).timer
+            assertTrue(started.untilUnplugged)
+            assertEquals(MAX_TIMER_DURATION, timer.remaining())
+        }
+
+        @Test
+        fun `ends once unplugged`() {
+            power.pluggedIn = true
+            timer.startUntilUnplugged()
+            assertNull(timer.checkPower())
+            power.pluggedIn = false
+            assertEquals(PowerLimit.UNPLUGGED, timer.checkPower())
+            assertNull(keeper.held)
+        }
+
+        @Test
+        fun `has no time to adjust, it is only re-displayed`() {
+            power.pluggedIn = true
+            val started = assertIs<StartResult.Started>(timer.startUntilUnplugged()).timer
+            clock.advance(5.minutes)
+            assertEquals(StartResult.Started(started), timer.extend())
+            assertEquals(StartResult.Started(started), timer.reduce())
+            assertEquals(started, keeper.held)
+        }
+
+        @Test
+        fun `a timed start replaces it`() {
+            power.pluggedIn = true
+            timer.startUntilUnplugged()
+            val started = assertIs<StartResult.Started>(timer.start(10.minutes)).timer
+            assertFalse(started.untilUnplugged)
+        }
+
+        @Test
+        fun `is started by automation`() {
+            power.pluggedIn = true
+            assertIs<StartResult.Started>(timer.execute(TimerCommand.StartUntilUnplugged))
+            assertTrue(keeper.held!!.untilUnplugged)
         }
     }
 

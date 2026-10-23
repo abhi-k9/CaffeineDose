@@ -40,6 +40,7 @@ import io.github.abhik9.caffeinedose.ui.theme.CaffeineDoseTheme
 /** User intents of the [MainScreen], implemented by [MainViewModel]. */
 interface MainActions {
     fun start(minutes: Int)
+    fun startWhileCharging()
     fun stop()
     fun extend()
     fun reduce()
@@ -148,6 +149,7 @@ fun MainScreen(
 //region Previews
 private object PreviewActions : MainActions {
     override fun start(minutes: Int) = Unit
+    override fun startWhileCharging() = Unit
     override fun stop() = Unit
     override fun extend() = Unit
     override fun reduce() = Unit

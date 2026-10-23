@@ -53,7 +53,15 @@ class AwakeTimer(
         log.record { "start($duration): $result" }
     }
 
-    private fun doStart(duration: Duration): StartResult {
+    /**
+     * Keeps the screen on until the charger is unplugged, replacing the running timer. Declined when no charger is
+     * plugged in. Like any timer, it never lasts more than [MAX_TIMER_DURATION].
+     */
+    fun startUntilUnplugged(): StartResult = doStart(MAX_TIMER_DURATION, untilUnplugged = true).also { result ->
+        log.record { "startUntilUnplugged: $result" }
+    }
+
+    private fun doStart(duration: Duration, untilUnplugged: Boolean = false): StartResult {
         // In whole milliseconds, the resolution of the clocks: a shorter timer would have ended already.
         val millis = duration.coerceAtMost(MAX_TIMER_DURATION).inWholeMilliseconds
         if (millis <= 0) {
@@ -61,8 +69,12 @@ class AwakeTimer(
             return StartResult.Stopped
         }
         missingRequirement()?.let { return StartResult.Blocked(it) }
+        if (untilUnplugged && !power.isPluggedIn()) return StartResult.Declined(PowerLimit.UNPLUGGED)
         settings().battery.limit(power)?.let { return StartResult.Declined(it) }
-        val timer = Timer(deadline = clock.elapsedMillis() + millis, endsAt = clock.wallMillis() + millis)
+        return hold(Timer(deadline = clock.elapsedMillis() + millis, endsAt = clock.wallMillis() + millis, untilUnplugged))
+    }
+
+    private fun hold(timer: Timer): StartResult {
         if (!keeper.hold(timer)) return StartResult.Refused
         onChange()
         return StartResult.Started(timer)
@@ -73,8 +85,9 @@ class AwakeTimer(
      * @return why it has been ended, `null` when it goes on.
      */
     fun checkPower(): PowerLimit? {
-        if (current() == null) return null
-        val limit = settings().battery.limit(power) ?: return null
+        val timer = current() ?: return null
+        val unplugged = timer.untilUnplugged && !power.isPluggedIn()
+        val limit = (if (unplugged) PowerLimit.UNPLUGGED else settings().battery.limit(power)) ?: return null
         log.record { "power: $limit" }
         stop()
         return limit
@@ -100,12 +113,15 @@ class AwakeTimer(
      * having no time left: it can still be extended, from now.
      * @param mayEnd whether [delta] is allowed to end the timer. Otherwise such a [delta] is ignored, and the timer is
      * only re-displayed (to refresh its available actions).
+     * A timer that lasts until the charger is unplugged has no time to adjust: it is only re-displayed.
      * @return `null` when there is no running timer.
      */
     fun adjust(delta: Duration, mayEnd: Boolean = true): StartResult? {
-        val left = remaining()
+        val current = current() ?: return null
+        if (current.untilUnplugged) return hold(current)
+        val left = current.remaining(clock)
         log.record { "adjust($delta, mayEnd=$mayEnd): remaining=$left" }
-        val remaining = left?.coerceAtLeast(Duration.ZERO) ?: return null
+        val remaining = left.coerceAtLeast(Duration.ZERO)
         val next = (remaining + delta).coerceAtMost(MAX_TIMER_DURATION)
         return start(if (next.isPositive() || mayEnd) next else remaining)
     }
@@ -142,6 +158,7 @@ class AwakeTimer(
 
     fun execute(command: TimerCommand): StartResult? = when (command) {
         is TimerCommand.Start -> start(command.duration ?: settings().initial)
+        TimerCommand.StartUntilUnplugged -> startUntilUnplugged()
         is TimerCommand.Adjust -> adjust(command.delta)
         TimerCommand.Extend -> extend()
         TimerCommand.Reduce -> reduce()
@@ -157,6 +174,9 @@ class AwakeTimer(
 sealed interface TimerCommand {
     /** Starts a timer of [duration], or of the default duration when `null`. */
     data class Start(val duration: Duration?) : TimerCommand
+
+    /** Keeps the screen on until the charger is unplugged. */
+    data object StartUntilUnplugged : TimerCommand
 
     data class Adjust(val delta: Duration) : TimerCommand
 

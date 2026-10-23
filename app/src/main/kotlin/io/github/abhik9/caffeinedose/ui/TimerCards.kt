@@ -93,6 +93,14 @@ internal fun TimerCard(state: MainUiState, actions: MainActions, elapsedNow: () 
             )
             return@Column
         }
+        if (timer.untilUnplugged) {
+            Text(stringResource(R.string.timer_while_charging_title), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(stringResource(R.string.until_unplugged), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(onClick = actions::stop) { Text(stringResource(R.string.action_stop)) }
+            return@Column
+        }
         val remaining = rememberRemaining(timer, elapsedNow)
         val remainingDescription = stringResource(R.string.timer_remaining_description, formatMinutes(ceilMinutes(remaining)))
         val context = LocalContext.current
@@ -135,9 +143,10 @@ internal fun StartTimerCard(state: MainUiState, actions: MainActions, elapsedNow
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() },
         )
-        // Prefilled with the remaining time (rounded up to the minute) when running, otherwise the default duration.
+        // Prefilled with the remaining time (rounded up to the minute) of a timed timer, otherwise the default duration.
         val initial = remember {
-            state.timer?.let { ceilMinutes((it.deadline - elapsedNow()).milliseconds) } ?: state.settings.minutes(DurationSetting.INITIAL)
+            state.timer?.takeUnless { it.untilUnplugged }?.let { ceilMinutes((it.deadline - elapsedNow()).milliseconds) }
+                ?: state.settings.minutes(DurationSetting.INITIAL)
         }
         val picker = rememberTimePickerState(initialHour = (initial / 60).coerceAtMost(23), initialMinute = initial % 60, is24Hour = true)
         val minutes = picker.hour * 60 + picker.minute
@@ -156,6 +165,11 @@ internal fun StartTimerCard(state: MainUiState, actions: MainActions, elapsedNow
         TimeInput(state = picker, modifier = Modifier.align(Alignment.CenterHorizontally))
         Button(onClick = { actions.start(minutes) }, enabled = minutes > 0, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(if (running) R.string.action_set else R.string.action_start, formatMinutes(minutes)))
+        }
+        if (state.timer?.untilUnplugged != true) {
+            OutlinedButton(onClick = actions::startWhileCharging, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.action_start_while_charging))
+            }
         }
     }
 }

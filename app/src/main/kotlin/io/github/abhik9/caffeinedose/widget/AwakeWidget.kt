@@ -81,10 +81,10 @@ internal object AwakeWidget {
                 setTextViewText(R.id.widget_state, context.shortcutStateText(timer))
                 setThemeColor(context, R.id.widget_state, "setTextColor", content)
             }
-            val description = if (timer != null) {
-                context.getString(R.string.widget_description_on, context.endTime(timer))
-            } else {
-                context.getString(R.string.widget_description_off)
+            val description = when {
+                timer == null -> context.getString(R.string.widget_description_off)
+                timer.untilUnplugged -> context.getString(R.string.widget_description_unplugged)
+                else -> context.getString(R.string.widget_description_on, context.endTime(timer))
             }
             setContentDescription(android.R.id.background, description)
             setOnClickPendingIntent(android.R.id.background, WidgetToggleReceiver.pendingIntent(context))

@@ -38,7 +38,8 @@ import io.github.abhik9.caffeinedose.system.toast
  * Started and stopped by the [ServiceScreenKeeper]. It ends the timer itself when:
  * - the deadline is reached,
  * - the screen is turned off (e.g. with the power button), unless disabled in the settings,
- * - the battery gets low or Battery Saver turns on, when enabled in the settings.
+ * - the battery gets low or Battery Saver turns on, when enabled in the settings,
+ * - the charger is unplugged, for a timer that lasts until then.
  *
  * `startForeground()` is only called when required: when started with `startForegroundService()`, or not in the
  * foreground yet. Since Android 12, calling it again from the background (e.g. to update the timer from an automation
@@ -58,16 +59,21 @@ class AwakeService : Service() {
         /** Extra holding the [Timer.endsAt] of the requested timer, next to its [EXTRA_DEADLINE]. */
         private const val EXTRA_ENDS_AT = "io.github.abhik9.caffeinedose.extra.ENDS_AT"
 
+        /** Extra holding the [Timer.untilUnplugged] of the requested timer. */
+        private const val EXTRA_UNTIL_UNPLUGGED = "io.github.abhik9.caffeinedose.extra.UNTIL_UNPLUGGED"
+
         fun intent(context: Context) = Intent(context, AwakeService::class.java)
 
         fun intent(context: Context, timer: Timer, foreground: Boolean): Intent = intent(context)
             .putExtra(EXTRA_DEADLINE, timer.deadline)
             .putExtra(EXTRA_ENDS_AT, timer.endsAt)
+            .putExtra(EXTRA_UNTIL_UNPLUGGED, timer.untilUnplugged)
             .putExtra(EXTRA_FOREGROUND, foreground)
 
         private fun Intent.timer(): Timer? {
             val deadline = getLongExtra(EXTRA_DEADLINE, 0L)
-            return if (deadline > 0L) Timer(deadline = deadline, endsAt = getLongExtra(EXTRA_ENDS_AT, 0L)) else null
+            if (deadline <= 0L) return null
+            return Timer(deadline, endsAt = getLongExtra(EXTRA_ENDS_AT, 0L), untilUnplugged = getBooleanExtra(EXTRA_UNTIL_UNPLUGGED, false))
         }
     }
 
@@ -110,7 +116,8 @@ class AwakeService : Service() {
                 }
 
                 // Delivered right away once registered, as the battery state is a sticky broadcast.
-                Intent.ACTION_BATTERY_CHANGED, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> checkPower()
+                Intent.ACTION_BATTERY_CHANGED, Intent.ACTION_POWER_DISCONNECTED, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED ->
+                    checkPower()
             }
         }
     }
@@ -132,6 +139,7 @@ class AwakeService : Service() {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_BATTERY_CHANGED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
             addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
         }
         // System broadcasts are delivered to non exported receivers.

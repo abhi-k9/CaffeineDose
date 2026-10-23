@@ -33,6 +33,7 @@ class AutomationTest {
         assertEquals(TimerCommand.Toggle, Automation.parse(Automation.ACTION_TOGGLE, null))
         assertEquals(TimerCommand.Extend, Automation.parse(Automation.ACTION_INCREMENT, null))
         assertEquals(TimerCommand.Reduce, Automation.parse(Automation.ACTION_DECREMENT, null))
+        assertEquals(TimerCommand.StartUntilUnplugged, Automation.parse(Automation.ACTION_START_WHILE_CHARGING, 60))
     }
 
     @Test

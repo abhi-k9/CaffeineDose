@@ -102,6 +102,7 @@
             tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="io.github.abhik9.caffeinedose.action.START" />
+                <action android:name="io.github.abhik9.caffeinedose.action.START_WHILE_CHARGING" />
                 <action android:name="io.github.abhik9.caffeinedose.action.STOP" />
                 <action android:name="io.github.abhik9.caffeinedose.action.TOGGLE" />
                 <action android:name="io.github.abhik9.caffeinedose.action.UPDATE" />
