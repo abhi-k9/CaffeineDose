@@ -19,8 +19,9 @@ ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it ru
   charging, or stop.
 - **Notification**: extend, reduce or stop the timer. Dismissing it (possible since Android 14) stops the timer, and so
   does turning the screen off (e.g. with the power button), unless disabled in the settings.
-- **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the
-  default duration and the `+` / `−` steps, the behavior, the theme, automation and diagnostics.
+- **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration or while
+  charging, configure the default duration and the `+` / `−` steps, the tile and widget steps, the behavior, the
+  battery limits, the theme, automation and diagnostics.
 
 **While charging**: keep the screen on until the charger is unplugged (for at most 24 hours), from the app, with
 automation, or as a step of the tile and widget.
@@ -61,11 +62,11 @@ battery optimization for CaffeineDose lifts this restriction. Changing or stoppi
 
 ## Diagnostics
 
-To investigate an issue, turn on **Record diagnostics** in the app settings, reproduce it, then **Export log** to a file.
-The log records what the app does and why (timer operations and where they come from, the service, wake lock and
-overlay, the screen turning on and off, a heartbeat while a timer runs, permissions, crashes), and the export starts with
-a snapshot of the app and device state. It is off by default (on in debug builds), capped at about 512 KB, and never
-leaves the device unless exported (see the [privacy policy](PRIVACY.md)).
+To investigate an issue, turn on **Record diagnostics** in the app settings, reproduce it, then **Export log** to a
+file. The log records what the app does and why (timer operations and where they come from, the service, wake lock and
+overlay, the screen turning on and off, the power supply, a heartbeat while a timer runs, permissions, crashes), and the
+export starts with a snapshot of the app and device state. It is off by default (on in debug builds), capped at about
+512 KB, and never leaves the device unless exported (see the [privacy policy](PRIVACY.md)).
 
 ## How it works
 
@@ -84,10 +85,15 @@ leaves the device unless exported (see the [privacy policy](PRIVACY.md)).
   [`ON_AFTER_RELEASE`](https://developer.android.com/reference/android/os/PowerManager#ON_AFTER_RELEASE): the screen then
   turns off after the usual timeout, instead of right away.
 - Where the tile or the widget isn't allowed to start a foreground service, it starts it from an invisible activity
-  instead.
+  instead. The launcher shortcuts always go through that activity.
+- The battery limits and "while charging" follow the system's battery broadcasts, received by the service while a timer
+  runs: no extra permission, and nothing runs in between.
+- The widgets are updated after every timer change. Should the system end the app while a timer runs, an inexact alarm
+  at its deadline still brings them back to the idle state.
 
-The `:core` module holds the logic in pure Kotlin, unit tested on the JVM: `AwakeTimer`, the settings, durations and the
-automation API. It defines small interfaces (`ScreenKeeper`, `DeviceClock`, `EventLog`) that `:app` implements with the
+The `:core` module holds the logic in pure Kotlin, unit tested on the JVM: `AwakeTimer`, the settings, durations, the
+battery limits, the "Tap again for longer" steps, how shortcuts react, the widget layouts and the automation API. It
+defines small interfaces (`ScreenKeeper`, `DeviceClock`, `PowerSource`, `EventLog`) that `:app` implements with the
 platform APIs, next to the Jetpack Compose UI.
 
 ## Building
