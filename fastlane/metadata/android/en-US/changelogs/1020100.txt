@@ -1,0 +1,1 @@
+- Built with updated versions of the build tools' libraries, fixing security issues reported in them. These libraries are not part of the app: it works exactly as in 1.2.0.
