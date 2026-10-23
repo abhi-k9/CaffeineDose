@@ -13,10 +13,11 @@ import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.shortcut.ShortcutHost
 import io.github.abhik9.caffeinedose.shortcut.shortcutStateText
-import io.github.abhik9.caffeinedose.shortcut.toggleTimer
+import io.github.abhik9.caffeinedose.shortcut.tapShortcut
 
 /**
- * Quick Settings tile: tap to keep the screen on for the default duration, or to stop the running timer.
+ * Quick Settings tile: tap to keep the screen on for the default duration, or to stop the running timer (or for the next
+ * step of "Tap again for longer", see [tapShortcut]). It shows until when the screen is kept on.
  */
 class AwakeTileService :
     TileService(),
@@ -26,7 +27,7 @@ class AwakeTileService :
 
     override fun onClick() {
         diagnostics.record { "tile: click, locked=$isLocked" }
-        toggleTimer(this)
+        tapShortcut(this)
     }
 
     override fun render(timer: Timer?) {

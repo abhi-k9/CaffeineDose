@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,12 +81,13 @@ internal fun DurationsCard(state: MainUiState, onEdit: (DurationSetting) -> Unit
             headlineContent = { Text(stringResource(setting.title)) },
             supportingContent = { Text(stringResource(setting.description)) },
             trailingContent = {
-                val value = when (setting) {
-                    DurationSetting.INITIAL -> formatMinutes(minutes)
-                    DurationSetting.INCREMENT -> stringResource(R.string.action_extend, minutes)
-                    DurationSetting.DECREMENT -> stringResource(R.string.action_reduce, minutes)
-                }
-                Text(value, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                SettingValue(
+                    when (setting) {
+                        DurationSetting.INITIAL -> formatMinutes(minutes)
+                        DurationSetting.INCREMENT -> stringResource(R.string.action_extend, minutes)
+                        DurationSetting.DECREMENT -> stringResource(R.string.action_reduce, minutes)
+                    },
+                )
             },
             colors = settingsItemColors(),
             modifier = Modifier.clickable { onEdit(setting) },
@@ -206,6 +208,10 @@ private fun SwitchItem(
     modifier = modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
 )
 
+/** The current value of a setting, at the end of its item. */
+@Composable
+private fun SettingValue(text: String) = Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+
 @Composable
 internal fun ShortcutsCard(state: MainUiState, actions: MainActions, onEditSteps: () -> Unit, modifier: Modifier = Modifier) =
     SettingsCard(modifier) {
@@ -232,10 +238,18 @@ private fun cycleStepLabel(step: CycleStep): String = when (step) {
     CycleStep.WhileCharging -> stringResource(R.string.cycle_step_while_charging)
 }
 
+/** Saves a selection of steps, possibly empty, as [CycleStep.encode]d text. */
+private val CycleStepsSaver = Saver<Set<CycleStep>, String>(
+    save = { CycleStep.encode(it.toList()) },
+    // decode() falls back to the default steps when there are none.
+    restore = { text -> if (text.isEmpty()) emptySet() else CycleStep.decode(text).toSet() },
+)
+
 /** Chooses the steps of "Tap again for longer", among [CycleStep.CHOICES]: at least one. */
 @Composable
 internal fun CycleStepsDialog(initial: List<CycleStep>, onDismiss: () -> Unit, onConfirm: (List<CycleStep>) -> Unit) {
-    var selected by remember { mutableStateOf(initial.toSet()) }
+    // Kept across configuration changes, like the dialog itself.
+    var selected by rememberSaveable(stateSaver = CycleStepsSaver) { mutableStateOf(initial.toSet()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.cycle_steps)) },
@@ -284,13 +298,7 @@ internal fun BatteryCard(state: MainUiState, actions: MainActions, onEditLevel: 
             ListItem(
                 headlineContent = { Text(stringResource(R.string.low_battery_level)) },
                 supportingContent = { Text(stringResource(R.string.low_battery_level_description)) },
-                trailingContent = {
-                    Text(
-                        formatPercent(state.settings.lowBatteryPercent),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                },
+                trailingContent = { SettingValue(formatPercent(state.settings.lowBatteryPercent)) },
                 colors = settingsItemColors(),
                 modifier = Modifier.clickable(onClick = onEditLevel),
             )

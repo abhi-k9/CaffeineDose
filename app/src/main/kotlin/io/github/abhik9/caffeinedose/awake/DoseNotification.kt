@@ -13,6 +13,7 @@ import android.os.Build.VERSION_CODES.BAKLAVA
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES_FULL
 import android.os.SystemClock
+import androidx.annotation.StringRes
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Timer
@@ -69,17 +70,11 @@ internal object DoseNotification {
             // Dismissing the notification (possible since Android 14) stops the timer.
             .setDeleteIntent(DoseActionReceiver.dismissIntent(context, timer.deadline))
             .apply {
-                if (timed) {
-                    addAction(action(context, DoseActionReceiver.ACTION_EXTEND, context.getString(R.string.action_extend, increment)))
-                }
+                if (timed) addAction(action(context, DoseActionReceiver.ACTION_EXTEND, R.string.action_extend, increment))
+                // Hidden rather than ending the timer; it can become stale as time goes by, which AwakeTimer.reduce() handles.
+                if (canReduce) addAction(action(context, DoseActionReceiver.ACTION_REDUCE, R.string.action_reduce, decrement))
             }
-            // Hidden rather than ending the timer; it can become stale as time goes by, which AwakeTimer.reduce() handles.
-            .apply {
-                if (canReduce) {
-                    addAction(action(context, DoseActionReceiver.ACTION_REDUCE, context.getString(R.string.action_reduce, decrement)))
-                }
-            }
-            .addAction(action(context, DoseActionReceiver.ACTION_STOP, context.getString(R.string.action_stop)))
+            .addAction(action(context, DoseActionReceiver.ACTION_STOP, R.string.action_stop))
             .apply {
                 // Shown right away, instead of being deferred by up to 10 seconds.
                 if (SDK_INT >= S) setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
@@ -89,9 +84,9 @@ internal object DoseNotification {
             .build()
     }
 
-    private fun action(context: Context, action: String, title: String) = Notification.Action.Builder(
+    private fun action(context: Context, action: String, @StringRes title: Int, vararg formatArgs: Any) = Notification.Action.Builder(
         Icon.createWithResource(context, R.drawable.ic_tile),
-        title,
+        context.getString(title, *formatArgs),
         DoseActionReceiver.pendingIntent(context, action),
     ).build()
 }

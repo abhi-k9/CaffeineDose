@@ -21,7 +21,7 @@ import io.github.abhik9.caffeinedose.widget.AwakeWidget
 
 /**
  * A shortcut to the timer: the Quick Settings tile or the home screen widget. Only what differs between them is here,
- * [toggleTimer] does the rest.
+ * [tapShortcut] does the rest.
  */
 interface ShortcutHost {
     /** Shows [timer], or the idle state when `null`. */
@@ -35,10 +35,10 @@ interface ShortcutHost {
 }
 
 /**
- * Toggles the timer from a tap on a shortcut, or steps through longer timers ("Tap again for longer"): every shortcut
- * reacts the same way.
+ * Handles a tap on a shortcut, see [io.github.abhik9.caffeinedose.core.AwakeTimer.tap]: every shortcut reacts the same
+ * way to its outcome.
  */
-fun Context.toggleTimer(host: ShortcutHost) {
+fun Context.tapShortcut(host: ShortcutHost) {
     when (val reaction = awakeTimer().tap().shortcutReaction()) {
         is ShortcutReaction.Show -> host.render(reaction.timer)
 

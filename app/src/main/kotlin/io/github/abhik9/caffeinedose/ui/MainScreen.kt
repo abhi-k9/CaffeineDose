@@ -198,4 +198,10 @@ private fun IdlePreview() = CaffeineDoseTheme(ThemeMode.LIGHT, dynamicColor = fa
 private fun RunningPreview() = CaffeineDoseTheme(ThemeMode.DARK, dynamicColor = false) {
     PreviewScreen(MainUiState(timer = Timer(deadline = 23 * 60_000L + 41_000L, endsAt = 0L)))
 }
+
+@Preview(name = "While charging")
+@Composable
+private fun WhileChargingPreview() = CaffeineDoseTheme(ThemeMode.LIGHT, dynamicColor = false) {
+    PreviewScreen(MainUiState(timer = Timer(deadline = 0L, endsAt = 0L, untilUnplugged = true)))
+}
 //endregion

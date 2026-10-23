@@ -99,7 +99,8 @@ class AwakeService : Service() {
     private var inForeground = false
     private var lastStartId = 0
 
-    private val screenReceiver = object : BroadcastReceiver() {
+    /** The screen turning on and off, and the power supply changes. */
+    private val systemReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 // Ends whichever timer is running, even one this service has not applied yet.
@@ -143,7 +144,7 @@ class AwakeService : Service() {
             addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
         }
         // System broadcasts are delivered to non exported receivers.
-        ContextCompat.registerReceiver(this, screenReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, systemReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -236,7 +237,7 @@ class AwakeService : Service() {
         handler.removeCallbacks(heartbeat)
         overlay.hide()
         if (wakeLock.isHeld) wakeLock.release()
-        unregisterReceiver(screenReceiver)
+        unregisterReceiver(systemReceiver)
         // Stopped by the system rather than by the keeper: don't report a timer that nothing holds anymore. A newer timer
         // is kept, it restarts this service.
         if (held != null && AwakeState.timer == held) {

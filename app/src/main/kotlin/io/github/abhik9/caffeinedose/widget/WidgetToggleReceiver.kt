@@ -7,7 +7,7 @@ import android.content.Intent
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.shortcut.ShortcutHost
-import io.github.abhik9.caffeinedose.shortcut.toggleTimer
+import io.github.abhik9.caffeinedose.shortcut.tapShortcut
 
 /**
  * Taps on the home screen widget, which toggle the timer like the Quick Settings tile, and the refreshes [AwakeWidget]
@@ -38,7 +38,7 @@ class WidgetToggleReceiver : BroadcastReceiver() {
         when (intent.action) {
             ACTION_TOGGLE -> {
                 app.diagnostics.record { "widget: tap" }
-                app.toggleTimer(WidgetHost(app))
+                app.tapShortcut(WidgetHost(app))
             }
             ACTION_REFRESH -> {
                 app.diagnostics.record { "widget: refresh" }
