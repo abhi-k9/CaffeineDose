@@ -4,14 +4,25 @@ import android.content.Context
 import io.github.abhik9.caffeinedose.core.ScreenKeeper
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * The running timer. It lives in memory only, like the wake lock held by [AwakeService] in the same process: when the
  * process dies, both are gone, and there is nothing to clean up.
  */
 internal object AwakeState {
-    @Volatile
-    var timer: Timer? = null
+    private val timerFlow = MutableStateFlow<Timer?>(null)
+
+    var timer: Timer?
+        get() = timerFlow.value
+        set(value) {
+            timerFlow.value = value
+        }
+
+    /** The [timer] as it changes, wherever from (notification, tile, widget, automation, end of the timer). */
+    val timers: StateFlow<Timer?> = timerFlow.asStateFlow()
 
     /**
      * `startForegroundService()` calls whose service has not called `startForeground()` yet. Stopping the service in the

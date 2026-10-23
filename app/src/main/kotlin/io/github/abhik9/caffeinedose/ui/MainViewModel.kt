@@ -10,6 +10,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.abhik9.caffeinedose.R
+import io.github.abhik9.caffeinedose.awake.AwakeState
 import io.github.abhik9.caffeinedose.awake.ScreenOverlay
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.core.CycleStep
@@ -28,15 +29,13 @@ import io.github.abhik9.caffeinedose.system.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -63,11 +62,6 @@ data class MainUiState(
 
 class MainViewModel(application: Application) : AndroidViewModel(application), MainActions {
 
-    private companion object {
-        /** The timer can change behind our back (notification actions, timeout, tile, automation). */
-        val POLL_INTERVAL = 1.seconds
-    }
-
     private val settings = SettingsStore.from(application)
     private val timer = application.awakeTimer()
     private val diagnostics = application.diagnostics
@@ -76,30 +70,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application), M
     @Volatile
     private var permissions: String? = null
 
+    /** What isn't observed (permissions, log size), to re-read: see [refresh]. */
     private val refreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    private val ticks = merge(
-        flow {
-            while (true) {
-                emit(Unit)
-                delay(POLL_INTERVAL)
-            }
-        },
-        refreshes,
-    )
 
-    val state: StateFlow<MainUiState> = combine(settings.changes, ticks) { current, _ -> uiState(current) }
-        // Reading the permissions is a binder call: keep it off the main thread.
-        .flowOn(Dispatchers.Default)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds.inWholeMilliseconds), uiState(settings.snapshot()))
+    val state: StateFlow<MainUiState> =
+        combine(settings.changes, AwakeState.timers, refreshes.onStart { emit(Unit) }) { current, running, _ -> uiState(current, running) }
+            // Reading the permissions is a binder call: keep it off the main thread.
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds.inWholeMilliseconds), uiState(settings.snapshot()))
 
     private val blockedRequirements = Channel<Requirement>(Channel.CONFLATED)
 
     /** What the user must resolve before a requested operation can run. */
     val blocked: Flow<Requirement> = blockedRequirements.receiveAsFlow()
 
-    private fun uiState(userSettings: UserSettings): MainUiState {
+    private fun uiState(userSettings: UserSettings, running: Timer? = timer.current()): MainUiState {
         val state = MainUiState(
-            timer = timer.current(),
+            timer = running,
             settings = userSettings,
             missingRequirement = timer.missingRequirement(),
             overlayAllowed = Settings.canDrawOverlays(getApplication<Application>()),
@@ -114,7 +101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), M
         return state
     }
 
-    /** Re-reads the timer and the permissions right away, e.g. when coming back from the system settings. */
+    /** Re-reads the permissions and the log size, e.g. when coming back from the system settings. */
     fun refresh() {
         refreshes.tryEmit(Unit)
     }
