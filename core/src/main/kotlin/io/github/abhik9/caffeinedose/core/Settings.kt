@@ -22,9 +22,14 @@ enum class DurationSetting(val defaultMinutes: Int, val range: IntRange) {
 }
 
 /**
- * Snapshot of the durations used by [AwakeTimer].
+ * Snapshot of the settings used by [AwakeTimer].
  */
-data class TimerSettings(val initial: Duration, val increment: Duration, val decrement: Duration) {
+data class TimerSettings(
+    val initial: Duration,
+    val increment: Duration,
+    val decrement: Duration,
+    val battery: BatteryLimits = BatteryLimits(),
+) {
     companion object {
         fun ofMinutes(minutes: (DurationSetting) -> Int) = TimerSettings(
             initial = DurationSetting.INITIAL.sanitize(minutes(DurationSetting.INITIAL)).minutes,

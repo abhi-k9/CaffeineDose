@@ -18,6 +18,9 @@ ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it ru
 - **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the
   default duration and the `+` / `−` steps, the behavior, the theme, automation and diagnostics.
 
+**Battery** (optional, in the app settings): let the screen turn off once the battery drops to a level of your choice
+(15% by default), or when Battery Saver turns on. Neither applies while the phone is charging.
+
 While the screen is kept on, the device doesn't lock automatically either: stop the timer, or turn the screen off,
 before leaving it unattended.
 

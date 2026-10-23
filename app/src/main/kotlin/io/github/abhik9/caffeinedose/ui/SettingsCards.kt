@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.abhik9.caffeinedose.R
+import io.github.abhik9.caffeinedose.core.BatteryLimits
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 
@@ -198,23 +199,90 @@ private fun SwitchItem(
 )
 
 @Composable
-internal fun MinutesDialog(setting: DurationSetting, initial: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
+internal fun BatteryCard(state: MainUiState, actions: MainActions, onEditLevel: () -> Unit, modifier: Modifier = Modifier) =
+    SettingsCard(modifier) {
+        SwitchItem(
+            title = R.string.low_battery_title,
+            description = R.string.low_battery_description,
+            checked = state.settings.lowBatteryStop,
+            onCheckedChange = actions::setLowBatteryStop,
+        )
+        if (state.settings.lowBatteryStop) {
+            SettingsDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.low_battery_level)) },
+                supportingContent = { Text(stringResource(R.string.low_battery_level_description)) },
+                trailingContent = {
+                    Text(
+                        formatPercent(state.settings.lowBatteryPercent),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                colors = settingsItemColors(),
+                modifier = Modifier.clickable(onClick = onEditLevel),
+            )
+        }
+        SettingsDivider()
+        SwitchItem(
+            title = R.string.battery_saver_title,
+            description = R.string.battery_saver_description,
+            checked = state.settings.stopOnBatterySaver,
+            onCheckedChange = actions::setStopOnBatterySaver,
+        )
+    }
+
+@Composable
+internal fun MinutesDialog(setting: DurationSetting, initial: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) = NumberDialog(
+    title = stringResource(setting.title),
+    initial = initial,
+    range = setting.range,
+    unit = stringResource(R.string.unit_minutes),
+    rangeText = stringResource(R.string.settings_range, formatMinutes(setting.range.first), formatMinutes(setting.range.last)),
+    onDismiss = onDismiss,
+    onConfirm = onConfirm,
+)
+
+@Composable
+internal fun BatteryLevelDialog(initial: Int, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) = NumberDialog(
+    title = stringResource(R.string.low_battery_level),
+    initial = initial,
+    range = BatteryLimits.PERCENT_RANGE,
+    unit = stringResource(R.string.unit_percent),
+    rangeText = stringResource(
+        R.string.settings_range,
+        formatPercent(BatteryLimits.PERCENT_RANGE.first),
+        formatPercent(BatteryLimits.PERCENT_RANGE.last),
+    ),
+    onDismiss = onDismiss,
+    onConfirm = onConfirm,
+)
+
+/** Asks for a whole number in [range], e.g. a duration in minutes. */
+@Composable
+private fun NumberDialog(
+    title: String,
+    initial: Int,
+    range: IntRange,
+    unit: String,
+    rangeText: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
     var text by rememberSaveable { mutableStateOf(initial.toString()) }
-    val value = text.toIntOrNull()?.takeIf { it in setting.range }
+    val value = text.toIntOrNull()?.takeIf { it in range }
     val focusRequester = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(setting.title)) },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { new -> text = new.filter(Char::isDigit).take(4) },
                 singleLine = true,
-                suffix = { Text(stringResource(R.string.unit_minutes)) },
+                suffix = { Text(unit) },
                 isError = value == null,
-                supportingText = {
-                    Text(stringResource(R.string.settings_range, formatMinutes(setting.range.first), formatMinutes(setting.range.last)))
-                },
+                supportingText = { Text(rangeText) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { value?.let(onConfirm) }),
                 modifier = Modifier.focusRequester(focusRequester),

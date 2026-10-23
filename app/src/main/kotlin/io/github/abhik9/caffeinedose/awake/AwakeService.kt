@@ -18,10 +18,13 @@ import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import io.github.abhik9.caffeinedose.EXTRA_DEADLINE
 import io.github.abhik9.caffeinedose.awakeTimer
+import io.github.abhik9.caffeinedose.core.AwakeTimer
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.shortcut.refreshShortcuts
+import io.github.abhik9.caffeinedose.system.message
+import io.github.abhik9.caffeinedose.system.toast
 
 /**
  * Keeps the screen on until the deadline of the [AwakeState.timer], with a screen wake lock, and a [ScreenOverlay] when
@@ -34,7 +37,8 @@ import io.github.abhik9.caffeinedose.shortcut.refreshShortcuts
  *
  * Started and stopped by the [ServiceScreenKeeper]. It ends the timer itself when:
  * - the deadline is reached,
- * - the screen is turned off (e.g. with the power button), unless disabled in the settings.
+ * - the screen is turned off (e.g. with the power button), unless disabled in the settings,
+ * - the battery gets low or Battery Saver turns on, when enabled in the settings.
  *
  * `startForeground()` is only called when required: when started with `startForegroundService()`, or not in the
  * foreground yet. Since Android 12, calling it again from the background (e.g. to update the timer from an automation
@@ -104,6 +108,9 @@ class AwakeService : Service() {
                     record { "screen on" }
                     update()
                 }
+
+                // Delivered right away once registered, as the battery state is a sticky broadcast.
+                Intent.ACTION_BATTERY_CHANGED, PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> checkPower()
             }
         }
     }
@@ -124,6 +131,8 @@ class AwakeService : Service() {
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_BATTERY_CHANGED)
+            addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
         }
         // System broadcasts are delivered to non exported receivers.
         ContextCompat.registerReceiver(this, screenReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -180,6 +189,13 @@ class AwakeService : Service() {
         handler.postDelayed(heartbeat, HEARTBEAT_MS)
         syncOverlay()
         record { "holding the screen for ${remaining}ms, overlay=${overlay.isShown}" }
+    }
+
+    /** Ends the timer when the power supply no longer lets the screen be kept on, see [AwakeTimer.checkPower]. */
+    private fun checkPower() {
+        val limit = awakeTimer().checkPower() ?: return
+        record { "stopped by the power supply: $limit" }
+        toast(limit.message)
     }
 
     private fun syncOverlay() {

@@ -13,6 +13,9 @@ sealed interface ShortcutReaction {
 
     /** The system refused to start from the background: start again from an activity, in the foreground. */
     data object StartFromForeground : ShortcutReaction
+
+    /** Nothing changed: tell the user why the power supply doesn't let the screen be kept on. */
+    data class Explain(val limit: PowerLimit) : ShortcutReaction
 }
 
 fun StartResult.shortcutReaction(): ShortcutReaction = when (this) {
@@ -20,4 +23,5 @@ fun StartResult.shortcutReaction(): ShortcutReaction = when (this) {
     StartResult.Stopped -> ShortcutReaction.Show(null)
     is StartResult.Blocked -> ShortcutReaction.Resolve(requirement)
     StartResult.Refused -> ShortcutReaction.StartFromForeground
+    is StartResult.Declined -> ShortcutReaction.Explain(limit)
 }

@@ -49,6 +49,17 @@
     <string name="overlay_title">Keep the screen on over other apps</string>
     <string name="overlay_description">Needed on some phones, e.g. Samsung, which ignore the usual way of keeping the screen on. Lets CaffeineDose show an invisible window over other apps while a timer runs.</string>
 
+    <string name="section_battery">Battery</string>
+    <string name="low_battery_title">Stop on low battery</string>
+    <string name="low_battery_description">Lets the screen turn off once the battery is low, unless the phone is charging.</string>
+    <string name="low_battery_level">Battery level</string>
+    <string name="low_battery_level_description">Stops at or below this level</string>
+    <string name="unit_percent">%</string>
+    <string name="battery_saver_title">Stop when Battery Saver turns on</string>
+    <string name="battery_saver_description">Lets the screen turn off once Battery Saver is on, unless the phone is charging.</string>
+    <string name="power_low_battery">The screen isn’t kept on: the battery is low.</string>
+    <string name="power_battery_saver">The screen isn’t kept on: Battery Saver is on.</string>
+
     <string name="section_appearance">Appearance</string>
     <string name="theme_title">Theme</string>
     <string name="theme_system">System</string>

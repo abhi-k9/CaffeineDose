@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.util.Log
 import androidx.core.content.edit
+import io.github.abhik9.caffeinedose.core.BatteryLimits
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.TimerSettings
 import kotlinx.coroutines.channels.awaitClose
@@ -23,6 +24,9 @@ data class UserSettings(
     val automationEnabled: Boolean = true,
     val stopOnScreenOff: Boolean = true,
     val diagnosticsEnabled: Boolean = false,
+    val lowBatteryStop: Boolean = false,
+    val lowBatteryPercent: Int = BatteryLimits.DEFAULT_PERCENT,
+    val stopOnBatterySaver: Boolean = false,
 ) {
     fun minutes(setting: DurationSetting): Int = durations[setting] ?: setting.defaultMinutes
 }
@@ -45,6 +49,9 @@ class SettingsStore private constructor(
         private const val KEY_AUTOMATION = "automation"
         private const val KEY_STOP_ON_SCREEN_OFF = "stop_on_screen_off"
         private const val KEY_DIAGNOSTICS = "diagnostics"
+        private const val KEY_LOW_BATTERY = "low_battery_stop"
+        private const val KEY_LOW_BATTERY_PERCENT = "low_battery_percent"
+        private const val KEY_BATTERY_SAVER = "battery_saver_stop"
 
         private val DurationSetting.key: String
             get() = when (this) {
@@ -64,7 +71,9 @@ class SettingsStore private constructor(
 
     fun setMinutes(setting: DurationSetting, minutes: Int) = prefs.edit { putInt(setting.key, setting.sanitize(minutes)) }
 
-    fun timerSettings(): TimerSettings = TimerSettings.ofMinutes(::minutes)
+    fun timerSettings(): TimerSettings = TimerSettings.ofMinutes(::minutes).copy(
+        battery = BatteryLimits(stopAtPercent = lowBatteryPercent.takeIf { lowBatteryStop }, stopOnBatterySaver = stopOnBatterySaver),
+    )
 
     var themeMode: ThemeMode
         get() = read(KEY_THEME, null, prefs::getString)?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
@@ -90,6 +99,21 @@ class SettingsStore private constructor(
         get() = read(KEY_DIAGNOSTICS, diagnosticsByDefault, prefs::getBoolean)
         set(value) = prefs.edit { putBoolean(KEY_DIAGNOSTICS, value) }
 
+    /** Whether a low battery ends the timer, see [BatteryLimits]. */
+    var lowBatteryStop: Boolean
+        get() = read(KEY_LOW_BATTERY, false, prefs::getBoolean)
+        set(value) = prefs.edit { putBoolean(KEY_LOW_BATTERY, value) }
+
+    /** The battery level, in percent, at or below which a low battery ends the timer. */
+    var lowBatteryPercent: Int
+        get() = read(KEY_LOW_BATTERY_PERCENT, BatteryLimits.DEFAULT_PERCENT, prefs::getInt).coerceIn(BatteryLimits.PERCENT_RANGE)
+        set(value) = prefs.edit { putInt(KEY_LOW_BATTERY_PERCENT, value.coerceIn(BatteryLimits.PERCENT_RANGE)) }
+
+    /** Whether Battery Saver ends the timer. */
+    var stopOnBatterySaver: Boolean
+        get() = read(KEY_BATTERY_SAVER, false, prefs::getBoolean)
+        set(value) = prefs.edit { putBoolean(KEY_BATTERY_SAVER, value) }
+
     fun snapshot() = UserSettings(
         durations = DurationSetting.entries.associateWith(::minutes),
         themeMode = themeMode,
@@ -97,6 +121,9 @@ class SettingsStore private constructor(
         automationEnabled = automationEnabled,
         stopOnScreenOff = stopOnScreenOff,
         diagnosticsEnabled = diagnosticsEnabled,
+        lowBatteryStop = lowBatteryStop,
+        lowBatteryPercent = lowBatteryPercent,
+        stopOnBatterySaver = stopOnBatterySaver,
     )
 
     /** Emits the current settings, then every change. */

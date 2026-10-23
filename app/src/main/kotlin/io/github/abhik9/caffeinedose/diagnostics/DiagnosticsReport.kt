@@ -19,6 +19,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.pm.PackageInfoCompat
 import io.github.abhik9.caffeinedose.awake.DoseNotification
 import io.github.abhik9.caffeinedose.awake.ScreenOverlay
+import io.github.abhik9.caffeinedose.awake.SystemPower
 import io.github.abhik9.caffeinedose.awakeTimer
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import java.time.Instant
@@ -57,6 +58,8 @@ internal object DiagnosticsReport {
         appendLine("Display over other apps: ${Settings.canDrawOverlays(app)}, known to be needed: ${ScreenOverlay.isNeeded()}")
         appendLine("Ignoring battery optimizations: ${power.isIgnoringBatteryOptimizations(app.packageName)}")
         appendLine("Power save mode: ${power.isPowerSaveMode}")
+        val battery = SystemPower(app)
+        appendLine("Battery: ${battery.batteryLevel() ?: "unknown"}%, plugged in: ${battery.isPluggedIn()}")
         if (SDK_INT >= P) {
             appendLine("Background restricted: ${activities.isBackgroundRestricted}")
             val bucket = app.getSystemService(UsageStatsManager::class.java).appStandbyBucket

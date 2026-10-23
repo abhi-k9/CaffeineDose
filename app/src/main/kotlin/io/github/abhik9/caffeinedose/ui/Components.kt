@@ -1,6 +1,7 @@
 package io.github.abhik9.caffeinedose.ui
 
 import android.icu.text.MeasureFormat
+import android.icu.text.NumberFormat
 import android.icu.util.Measure
 import android.icu.util.MeasureUnit
 import androidx.annotation.StringRes
@@ -69,6 +70,13 @@ internal fun WarningCard(@StringRes title: Int, @StringRes body: Int, onClick: (
             Text(stringResource(R.string.warning_action))
         }
     }
+}
+
+/** A percentage, localized, e.g. "15%". */
+@Composable
+internal fun formatPercent(percent: Int): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(locale, percent) { NumberFormat.getPercentInstance(locale).format(percent / 100.0) }
 }
 
 /**

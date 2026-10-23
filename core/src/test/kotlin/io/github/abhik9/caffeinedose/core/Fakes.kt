@@ -29,3 +29,9 @@ class FakeKeeper(var available: Boolean = true, var permitted: Boolean = true) :
         releases++
     }
 }
+
+class FakePower(var pluggedIn: Boolean = true, var level: Int? = 100, var batterySaver: Boolean = false) : PowerSource {
+    override fun isPluggedIn() = pluggedIn
+    override fun batteryLevel() = level
+    override fun isBatterySaverOn() = batterySaver
+}

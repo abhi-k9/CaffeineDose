@@ -48,6 +48,9 @@ interface MainActions {
     fun setDynamicColor(enabled: Boolean)
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
+    fun setLowBatteryStop(enabled: Boolean)
+    fun setLowBatteryPercent(percent: Int)
+    fun setStopOnBatterySaver(enabled: Boolean)
     fun setDiagnosticsEnabled(enabled: Boolean)
     fun clearDiagnostics()
 }
@@ -71,6 +74,7 @@ fun MainScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var editing by rememberSaveable { mutableStateOf<DurationSetting?>(null) }
+    var editingBatteryLevel by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = { LargeTopAppBar(title = { Text(stringResource(R.string.app_name)) }, scrollBehavior = scrollBehavior) },
@@ -106,6 +110,8 @@ fun MainScreen(
                 DurationsCard(state, onEdit = { editing = it })
                 SectionHeader(R.string.section_behavior)
                 BehaviorCard(state, actions, onAllowOverlay)
+                SectionHeader(R.string.section_battery)
+                BatteryCard(state, actions, onEditLevel = { editingBatteryLevel = true })
                 SectionHeader(R.string.section_appearance)
                 AppearanceCard(state, actions)
                 SectionHeader(R.string.section_automation)
@@ -127,6 +133,16 @@ fun MainScreen(
             },
         )
     }
+    if (editingBatteryLevel) {
+        BatteryLevelDialog(
+            initial = state.settings.lowBatteryPercent,
+            onDismiss = { editingBatteryLevel = false },
+            onConfirm = {
+                actions.setLowBatteryPercent(it)
+                editingBatteryLevel = false
+            },
+        )
+    }
 }
 
 //region Previews
@@ -140,6 +156,9 @@ private object PreviewActions : MainActions {
     override fun setDynamicColor(enabled: Boolean) = Unit
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
+    override fun setLowBatteryStop(enabled: Boolean) = Unit
+    override fun setLowBatteryPercent(percent: Int) = Unit
+    override fun setStopOnBatterySaver(enabled: Boolean) = Unit
     override fun setDiagnosticsEnabled(enabled: Boolean) = Unit
     override fun clearDiagnostics() = Unit
 }

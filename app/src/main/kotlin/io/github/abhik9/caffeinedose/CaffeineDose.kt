@@ -3,6 +3,7 @@ package io.github.abhik9.caffeinedose
 import android.content.Context
 import android.os.SystemClock
 import io.github.abhik9.caffeinedose.awake.ServiceScreenKeeper
+import io.github.abhik9.caffeinedose.awake.SystemPower
 import io.github.abhik9.caffeinedose.core.AwakeTimer
 import io.github.abhik9.caffeinedose.core.DeviceClock
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
@@ -28,6 +29,7 @@ fun Context.awakeTimer(): AwakeTimer {
         keeper = ServiceScreenKeeper(context),
         clock = SystemDeviceClock,
         settings = settings::timerSettings,
+        power = SystemPower(context),
         onChange = context::refreshShortcuts,
         log = context.diagnostics,
     )

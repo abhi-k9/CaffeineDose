@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.net.toUri
 import io.github.abhik9.caffeinedose.R
+import io.github.abhik9.caffeinedose.core.PowerLimit
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
@@ -60,12 +61,21 @@ fun Context.endTime(timer: Timer): String = DateFormat.getTimeFormat(this).forma
 /** "Until 10:42", for the notification and the shortcuts (Quick Settings tile, home screen widget). */
 fun Context.untilText(timer: Timer): String = getString(R.string.until, endTime(timer))
 
+/** Why the power supply doesn't let the screen be kept on. */
+@get:StringRes
+val PowerLimit.message: Int
+    get() = when (this) {
+        PowerLimit.LOW_BATTERY -> R.string.power_low_battery
+        PowerLimit.BATTERY_SAVER -> R.string.power_battery_saver
+    }
+
 fun Context.toast(@StringRes message: Int) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 
-/** Tells the user why a timer operation could not run, when it was [StartResult.Blocked] or [StartResult.Refused]. */
+/** Tells the user why a timer operation could not run: it was [StartResult.Blocked], declined or refused. */
 fun Context.reportBlocked(result: StartResult?) {
     when (result) {
         is StartResult.Blocked -> toast(result.requirement.title)
+        is StartResult.Declined -> toast(result.limit.message)
         StartResult.Refused -> toast(R.string.refused_toast)
         else -> Unit
     }

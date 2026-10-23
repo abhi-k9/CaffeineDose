@@ -12,6 +12,9 @@ sealed interface StartResult {
     /** Nothing changed: the timer can't run until [requirement] is resolved. */
     data class Blocked(val requirement: Requirement) : StartResult
 
+    /** Nothing changed: the power supply doesn't let the screen be kept on, see [BatteryLimits]. */
+    data class Declined(val limit: PowerLimit) : StartResult
+
     /**
      * Nothing changed: the system refused to keep the screen awake, typically because the request came from the
      * background. It can be retried from the foreground (e.g. from the app).
@@ -30,6 +33,7 @@ class AwakeTimer(
     private val keeper: ScreenKeeper,
     private val clock: DeviceClock,
     private val settings: () -> TimerSettings,
+    private val power: PowerSource = PowerSource.MAINS,
     /** Called after every change of the timer, including when it ends: e.g. to refresh the tile and the widgets. */
     private val onChange: () -> Unit = {},
     private val log: EventLog = EventLog.NONE,
@@ -57,10 +61,23 @@ class AwakeTimer(
             return StartResult.Stopped
         }
         missingRequirement()?.let { return StartResult.Blocked(it) }
+        settings().battery.limit(power)?.let { return StartResult.Declined(it) }
         val timer = Timer(deadline = clock.elapsedMillis() + millis, endsAt = clock.wallMillis() + millis)
         if (!keeper.hold(timer)) return StartResult.Refused
         onChange()
         return StartResult.Started(timer)
+    }
+
+    /**
+     * Ends the running timer when the power supply no longer lets the screen be kept on, e.g. the battery got low.
+     * @return why it has been ended, `null` when it goes on.
+     */
+    fun checkPower(): PowerLimit? {
+        if (current() == null) return null
+        val limit = settings().battery.limit(power) ?: return null
+        log.record { "power: $limit" }
+        stop()
+        return limit
     }
 
     fun stop() {

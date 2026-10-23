@@ -10,6 +10,7 @@ import io.github.abhik9.caffeinedose.core.ShortcutReaction
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.core.shortcutReaction
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
+import io.github.abhik9.caffeinedose.system.message
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
 import io.github.abhik9.caffeinedose.system.title
@@ -46,6 +47,11 @@ fun Context.toggleTimer(host: ShortcutHost) {
 
         // Some devices don't let a shortcut start a foreground service: start it from an activity instead.
         ShortcutReaction.StartFromForeground -> host.whenUnlocked { host.launch(StartActivity.intent(this)) }
+
+        is ShortcutReaction.Explain -> {
+            toast(reaction.limit.message)
+            host.render(awakeTimer().current())
+        }
     }
 }
 

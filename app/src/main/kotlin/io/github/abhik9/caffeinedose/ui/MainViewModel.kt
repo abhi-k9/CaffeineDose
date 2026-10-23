@@ -21,6 +21,7 @@ import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 import io.github.abhik9.caffeinedose.settings.UserSettings
+import io.github.abhik9.caffeinedose.system.message
 import io.github.abhik9.caffeinedose.system.reportBlocked
 import io.github.abhik9.caffeinedose.system.toast
 import kotlinx.coroutines.Dispatchers
@@ -162,6 +163,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application), M
 
     override fun setStopOnScreenOff(enabled: Boolean) {
         settings.stopOnScreenOff = enabled
+    }
+
+    override fun setLowBatteryStop(enabled: Boolean) {
+        settings.lowBatteryStop = enabled
+        checkPower()
+    }
+
+    override fun setLowBatteryPercent(percent: Int) {
+        settings.lowBatteryPercent = percent
+        checkPower()
+    }
+
+    override fun setStopOnBatterySaver(enabled: Boolean) {
+        settings.stopOnBatterySaver = enabled
+        checkPower()
+    }
+
+    /** A running timer follows new battery settings right away, instead of at the next battery change. */
+    private fun checkPower() {
+        timer.checkPower()?.let { getApplication<Application>().toast(it.message) }
+        refresh()
     }
 
     override fun setDiagnosticsEnabled(enabled: Boolean) {
