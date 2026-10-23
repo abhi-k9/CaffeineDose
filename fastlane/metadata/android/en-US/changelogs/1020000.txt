@@ -1,0 +1,5 @@
+- Keep the screen on while charging, until unplugged.
+- Optional: each tap on the tile or widget starts a longer timer, with steps of your choice.
+- Optional: let the screen turn off when the battery runs low or Battery Saver turns on.
+- Launcher shortcuts: long press the app icon for 15 min, 1 h, while charging, or stop.
+- The widget no longer shows a timer that has already ended.
