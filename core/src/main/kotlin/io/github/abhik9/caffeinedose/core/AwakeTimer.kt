@@ -24,8 +24,8 @@ sealed interface StartResult {
 }
 
 /**
- * All the timer operations, shared by the notification actions, the Quick Settings tile, automation intents, the app
- * screen and the service holding the screen.
+ * All the timer operations, shared by the notification actions, the shortcuts (Quick Settings tile, home screen widget,
+ * launcher shortcuts), automation intents, the app screen and the service holding the screen.
  *
  * Stateless and cheap to create: the state lives in the [keeper]. Operations are expected to run on a single thread
  * (the Android main thread), which serializes them.
@@ -65,10 +65,7 @@ class AwakeTimer(
     private fun doStart(duration: Duration, untilUnplugged: Boolean = false): StartResult {
         // In whole milliseconds, the resolution of the clocks: a shorter timer would have ended already.
         val millis = duration.coerceAtMost(MAX_TIMER_DURATION).inWholeMilliseconds
-        if (millis <= 0) {
-            stop()
-            return StartResult.Stopped
-        }
+        if (millis <= 0) return stopped()
         missingRequirement()?.let { return StartResult.Blocked(it) }
         if (untilUnplugged && !power.isPluggedIn()) return StartResult.Declined(PowerLimit.UNPLUGGED)
         settings().battery.limit(power)?.let { return StartResult.Declined(it) }
@@ -100,12 +97,12 @@ class AwakeTimer(
         onChange()
     }
 
-    fun toggle(): StartResult = if (current() == null) {
-        start()
-    } else {
+    private fun stopped(): StartResult {
         stop()
-        StartResult.Stopped
+        return StartResult.Stopped
     }
+
+    fun toggle(): StartResult = if (current() == null) start() else stopped()
 
     /**
      * What a tap on a shortcut (Quick Settings tile, home screen widget) does: toggles the default timer, or steps
@@ -118,13 +115,8 @@ class AwakeTimer(
         val next = nextCycleStep(steps, running, running?.remaining(clock) ?: Duration.ZERO, power.isPluggedIn())
         log.record { "tap: next step $next" }
         return when (next) {
-            null -> {
-                stop()
-                StartResult.Stopped
-            }
-
+            null -> stopped()
             is CycleStep.Minutes -> start(next.minutes.minutes)
-
             CycleStep.WhileCharging -> startUntilUnplugged()
         }
     }
@@ -186,10 +178,7 @@ class AwakeTimer(
         TimerCommand.Extend -> extend()
         TimerCommand.Reduce -> reduce()
         TimerCommand.Toggle -> toggle()
-        TimerCommand.Stop -> {
-            stop()
-            StartResult.Stopped
-        }
+        TimerCommand.Stop -> stopped()
     }
 }
 
