@@ -10,27 +10,41 @@ import io.github.abhik9.caffeinedose.shortcut.ShortcutHost
 import io.github.abhik9.caffeinedose.shortcut.toggleTimer
 
 /**
- * Taps on the home screen widget, which toggle the timer like the Quick Settings tile. Not exported: only reachable
- * through the widget's [PendingIntent]. A tap on a widget lets the app start its foreground service from the background.
+ * Taps on the home screen widget, which toggle the timer like the Quick Settings tile, and the refreshes [AwakeWidget]
+ * schedules. Not exported: only reachable through the widget's or the alarm's [PendingIntent]. A tap on a widget lets the
+ * app start its foreground service from the background.
  */
 class WidgetToggleReceiver : BroadcastReceiver() {
 
     companion object {
         private const val ACTION_TOGGLE = "io.github.abhik9.caffeinedose.widget.TOGGLE"
+        private const val ACTION_REFRESH = "io.github.abhik9.caffeinedose.widget.REFRESH"
 
-        fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+        fun pendingIntent(context: Context): PendingIntent = broadcast(context, ACTION_TOGGLE)
+
+        /** Updates every widget with the current timer. */
+        fun refreshIntent(context: Context): PendingIntent = broadcast(context, ACTION_REFRESH)
+
+        private fun broadcast(context: Context, action: String) = PendingIntent.getBroadcast(
             context,
             0,
-            Intent(context, WidgetToggleReceiver::class.java).setAction(ACTION_TOGGLE),
+            Intent(context, WidgetToggleReceiver::class.java).setAction(action),
             PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != ACTION_TOGGLE) return
         val app = context.applicationContext
-        app.diagnostics.record { "widget: tap" }
-        app.toggleTimer(WidgetHost(app))
+        when (intent.action) {
+            ACTION_TOGGLE -> {
+                app.diagnostics.record { "widget: tap" }
+                app.toggleTimer(WidgetHost(app))
+            }
+            ACTION_REFRESH -> {
+                app.diagnostics.record { "widget: refresh" }
+                AwakeWidget.updateAll(app)
+            }
+        }
     }
 
     /** Home screen widgets are only shown on an unlocked device: there is nothing to wait for. */

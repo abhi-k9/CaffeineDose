@@ -1,5 +1,6 @@
 package io.github.abhik9.caffeinedose.widget
 
+import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT
 import android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH
@@ -11,6 +12,7 @@ import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.S
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.SizeF
 import android.widget.RemoteViews
 import androidx.annotation.ColorRes
@@ -27,14 +29,39 @@ import io.github.abhik9.caffeinedose.system.endTime
 /**
  * The home screen widget: like the Quick Settings tile, it shows whether the screen is kept on and until when, and a tap
  * toggles the timer (see [WidgetToggleReceiver]). It adapts to its size with the [WidgetLayout]s.
+ *
+ * The widgets are updated after every timer operation, and at the deadline of the timer by an alarm: the end of the timer
+ * otherwise goes unnoticed if the app process died in the meantime.
  */
 internal object AwakeWidget {
 
     /** Shows [timer] on every widget, or the idle state when `null`. */
     fun updateAll(context: Context, timer: Timer? = context.awakeTimer().current()) {
         val manager = context.getSystemService(AppWidgetManager::class.java) ?: return
-        update(context, manager, timer) { manager.getAppWidgetIds(ComponentName(context, AwakeWidgetProvider::class.java)) }
+        update(context, manager, timer) {
+            manager.getAppWidgetIds(ComponentName(context, AwakeWidgetProvider::class.java))
+                .also { ids -> scheduleRefresh(context, if (ids.isEmpty()) null else timer) }
+        }
     }
+
+    /**
+     * Refreshes the widgets within [REFRESH_WINDOW] after the deadline of [timer], or cancels the refresh when `null`.
+     * Not exact, which would need a permission, and non-waking: the widgets can't be seen before the device wakes up.
+     */
+    private fun scheduleRefresh(context: Context, timer: Timer?) {
+        val alarms = context.getSystemService(AlarmManager::class.java) ?: return
+        val refresh = WidgetToggleReceiver.refreshIntent(context)
+        if (timer == null || timer.untilUnplugged) {
+            alarms.cancel(refresh)
+        } else {
+            // A second after the deadline, so that the timer has ended by then.
+            val start = maxOf(timer.deadline, SystemClock.elapsedRealtime()) + 1_000L
+            alarms.setWindow(AlarmManager.ELAPSED_REALTIME, start, REFRESH_WINDOW, refresh)
+        }
+    }
+
+    /** The shortest window the system allows (since Android 12), in milliseconds. */
+    private const val REFRESH_WINDOW = 10 * 60 * 1_000L
 
     /**
      * Shows [timer] on the widgets [ids]. Never throws: widgets are updated after every timer operation, which must not
