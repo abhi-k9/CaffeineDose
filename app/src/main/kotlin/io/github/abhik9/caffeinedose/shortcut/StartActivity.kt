@@ -23,9 +23,9 @@ class StartActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        // Started once the activity is in the foreground.
-        diagnostics.record { "tile: start from the fallback activity" }
-        val result = awakeTimer().start()
+        // Started once the activity is in the foreground: the tap that the system refused, again.
+        diagnostics.record { "shortcut: tap from the fallback activity" }
+        val result = awakeTimer().tap()
         if (result is StartResult.Blocked) startSettings(settingsIntent(result.requirement))
         reportBlocked(result)
         finish()

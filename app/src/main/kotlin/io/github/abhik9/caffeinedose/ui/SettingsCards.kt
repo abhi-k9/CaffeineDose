@@ -3,12 +3,17 @@ package io.github.abhik9.caffeinedose.ui
 import android.text.format.Formatter
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -25,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -36,7 +42,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.core.BatteryLimits
+import io.github.abhik9.caffeinedose.core.CycleStep
 import io.github.abhik9.caffeinedose.core.DurationSetting
+import io.github.abhik9.caffeinedose.core.ordered
 import io.github.abhik9.caffeinedose.settings.ThemeMode
 
 @get:StringRes
@@ -197,6 +205,70 @@ private fun SwitchItem(
     colors = settingsItemColors(),
     modifier = modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
 )
+
+@Composable
+internal fun ShortcutsCard(state: MainUiState, actions: MainActions, onEditSteps: () -> Unit, modifier: Modifier = Modifier) =
+    SettingsCard(modifier) {
+        SwitchItem(
+            title = R.string.cycle_title,
+            description = R.string.cycle_description,
+            checked = state.settings.cycleEnabled,
+            onCheckedChange = actions::setCycleEnabled,
+        )
+        if (state.settings.cycleEnabled) {
+            SettingsDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.cycle_steps)) },
+                supportingContent = { Text(state.settings.cycleSteps.map { cycleStepLabel(it) }.joinToString(" → ")) },
+                colors = settingsItemColors(),
+                modifier = Modifier.clickable(onClick = onEditSteps),
+            )
+        }
+    }
+
+@Composable
+private fun cycleStepLabel(step: CycleStep): String = when (step) {
+    is CycleStep.Minutes -> formatMinutes(step.minutes)
+    CycleStep.WhileCharging -> stringResource(R.string.cycle_step_while_charging)
+}
+
+/** Chooses the steps of "Tap again for longer", among [CycleStep.CHOICES]: at least one. */
+@Composable
+internal fun CycleStepsDialog(initial: List<CycleStep>, onDismiss: () -> Unit, onConfirm: (List<CycleStep>) -> Unit) {
+    var selected by remember { mutableStateOf(initial.toSet()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.cycle_steps)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                CycleStep.CHOICES.forEach { step ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = step in selected,
+                                role = Role.Checkbox,
+                                onValueChange = { checked -> selected = if (checked) selected + step else selected - step },
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = step in selected, onCheckedChange = null)
+                        Text(cycleStepLabel(step), modifier = Modifier.padding(start = 12.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selected.toList().ordered()) }, enabled = selected.isNotEmpty()) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+        },
+    )
+}
 
 @Composable
 internal fun BatteryCard(state: MainUiState, actions: MainActions, onEditLevel: () -> Unit, modifier: Modifier = Modifier) =

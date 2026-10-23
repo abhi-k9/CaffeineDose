@@ -13,6 +13,8 @@ ZzzTimer acts when the timer *ends*, CaffeineDose holds the screen *while* it ru
 
 - **Quick Settings tile**: tap to keep the screen on for the default duration, tap again to stop.
 - **Home screen widget**: the same as the tile, from the home screen. 1×1 by default, it shows more once resized.
+- **Tap again for longer** (optional): each tap on the tile or the widget starts the next, longer step of your choice
+  (15 min → 1 h → 4 h by default, possibly "while charging"), and a tap after the last one stops.
 - **Notification**: extend, reduce or stop the timer. Dismissing it (possible since Android 14) stops the timer, and so
   does turning the screen off (e.g. with the power button), unless disabled in the settings.
 - **App** (launcher, notification tap, or long press on the tile): keep the screen on for any duration, configure the

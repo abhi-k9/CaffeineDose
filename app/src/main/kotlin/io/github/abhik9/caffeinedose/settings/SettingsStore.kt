@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.util.Log
 import androidx.core.content.edit
 import io.github.abhik9.caffeinedose.core.BatteryLimits
+import io.github.abhik9.caffeinedose.core.CycleStep
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.TimerSettings
 import kotlinx.coroutines.channels.awaitClose
@@ -27,6 +28,8 @@ data class UserSettings(
     val lowBatteryStop: Boolean = false,
     val lowBatteryPercent: Int = BatteryLimits.DEFAULT_PERCENT,
     val stopOnBatterySaver: Boolean = false,
+    val cycleEnabled: Boolean = false,
+    val cycleSteps: List<CycleStep> = CycleStep.DEFAULT,
 ) {
     fun minutes(setting: DurationSetting): Int = durations[setting] ?: setting.defaultMinutes
 }
@@ -52,6 +55,8 @@ class SettingsStore private constructor(
         private const val KEY_LOW_BATTERY = "low_battery_stop"
         private const val KEY_LOW_BATTERY_PERCENT = "low_battery_percent"
         private const val KEY_BATTERY_SAVER = "battery_saver_stop"
+        private const val KEY_CYCLE = "cycle"
+        private const val KEY_CYCLE_STEPS = "cycle_steps"
 
         private val DurationSetting.key: String
             get() = when (this) {
@@ -73,6 +78,7 @@ class SettingsStore private constructor(
 
     fun timerSettings(): TimerSettings = TimerSettings.ofMinutes(::minutes).copy(
         battery = BatteryLimits(stopAtPercent = lowBatteryPercent.takeIf { lowBatteryStop }, stopOnBatterySaver = stopOnBatterySaver),
+        cycle = if (cycleEnabled) cycleSteps else emptyList(),
     )
 
     var themeMode: ThemeMode
@@ -114,6 +120,16 @@ class SettingsStore private constructor(
         get() = read(KEY_BATTERY_SAVER, false, prefs::getBoolean)
         set(value) = prefs.edit { putBoolean(KEY_BATTERY_SAVER, value) }
 
+    /** Whether the tile and the widget step through [cycleSteps] ("Tap again for longer"). */
+    var cycleEnabled: Boolean
+        get() = read(KEY_CYCLE, false, prefs::getBoolean)
+        set(value) = prefs.edit { putBoolean(KEY_CYCLE, value) }
+
+    /** Kept while [cycleEnabled] is off, to find them again. */
+    var cycleSteps: List<CycleStep>
+        get() = CycleStep.decode(read(KEY_CYCLE_STEPS, null, prefs::getString))
+        set(value) = prefs.edit { putString(KEY_CYCLE_STEPS, CycleStep.encode(value)) }
+
     fun snapshot() = UserSettings(
         durations = DurationSetting.entries.associateWith(::minutes),
         themeMode = themeMode,
@@ -124,6 +140,8 @@ class SettingsStore private constructor(
         lowBatteryStop = lowBatteryStop,
         lowBatteryPercent = lowBatteryPercent,
         stopOnBatterySaver = stopOnBatterySaver,
+        cycleEnabled = cycleEnabled,
+        cycleSteps = cycleSteps,
     )
 
     /** Emits the current settings, then every change. */

@@ -1,8 +1,8 @@
 package io.github.abhik9.caffeinedose.core
 
 /**
- * What a shortcut to the timer, the Quick Settings tile or the home screen widget, does once a tap toggled it. Both
- * react the same way to every outcome.
+ * What a shortcut to the timer, the Quick Settings tile or the home screen widget, does after a tap ([AwakeTimer.tap]).
+ * Both react the same way to every outcome.
  */
 sealed interface ShortcutReaction {
     /** Shows [timer], or the idle state when `null`. */

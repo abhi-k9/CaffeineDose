@@ -34,9 +34,12 @@ interface ShortcutHost {
     fun whenUnlocked(action: () -> Unit) = action()
 }
 
-/** Toggles the timer from a tap on a shortcut, which reacts the same way as every other shortcut. */
+/**
+ * Toggles the timer from a tap on a shortcut, or steps through longer timers ("Tap again for longer"): every shortcut
+ * reacts the same way.
+ */
 fun Context.toggleTimer(host: ShortcutHost) {
-    when (val reaction = awakeTimer().toggle().shortcutReaction()) {
+    when (val reaction = awakeTimer().tap().shortcutReaction()) {
         is ShortcutReaction.Show -> host.render(reaction.timer)
 
         is ShortcutReaction.Resolve -> {

@@ -29,6 +29,8 @@ data class TimerSettings(
     val increment: Duration,
     val decrement: Duration,
     val battery: BatteryLimits = BatteryLimits(),
+    /** The steps of "Tap again for longer", empty when shortcuts only toggle the default timer. */
+    val cycle: List<CycleStep> = emptyList(),
 ) {
     companion object {
         fun ofMinutes(minutes: (DurationSetting) -> Int) = TimerSettings(

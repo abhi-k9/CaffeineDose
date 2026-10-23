@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.abhik9.caffeinedose.R
 import io.github.abhik9.caffeinedose.awake.ScreenOverlay
 import io.github.abhik9.caffeinedose.awakeTimer
+import io.github.abhik9.caffeinedose.core.CycleStep
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.StartResult
@@ -165,6 +166,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application), M
 
     override fun setStopOnScreenOff(enabled: Boolean) {
         settings.stopOnScreenOff = enabled
+    }
+
+    override fun setCycleEnabled(enabled: Boolean) {
+        settings.cycleEnabled = enabled
+    }
+
+    override fun setCycleSteps(steps: List<CycleStep>) {
+        settings.cycleSteps = steps
     }
 
     override fun setLowBatteryStop(enabled: Boolean) {

@@ -37,12 +37,18 @@
 
     <string name="section_durations">Durations</string>
     <string name="settings_initial">Default duration</string>
-    <string name="settings_initial_description">Used by the Quick Settings tile</string>
+    <string name="settings_initial_description">Used by the tile and the widget</string>
     <string name="settings_increment">Extend by</string>
     <string name="settings_increment_description">The “+” button</string>
     <string name="settings_decrement">Reduce by</string>
     <string name="settings_decrement_description">The “−” button</string>
     <string name="settings_range">From %1$s to %2$s</string>
+
+    <string name="section_shortcuts">Tile and widget</string>
+    <string name="cycle_title">Tap again for longer</string>
+    <string name="cycle_description">Each tap on the tile or the widget starts the next, longer step. After the last one, a tap stops.</string>
+    <string name="cycle_steps">Steps</string>
+    <string name="cycle_step_while_charging">While charging</string>
 
     <string name="section_behavior">Behavior</string>
     <string name="stop_on_screen_off_title">Stop when the screen is turned off</string>

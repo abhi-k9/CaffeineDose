@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.abhik9.caffeinedose.R
+import io.github.abhik9.caffeinedose.core.CycleStep
 import io.github.abhik9.caffeinedose.core.DurationSetting
 import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.core.Timer
@@ -49,6 +50,8 @@ interface MainActions {
     fun setDynamicColor(enabled: Boolean)
     fun setAutomationEnabled(enabled: Boolean)
     fun setStopOnScreenOff(enabled: Boolean)
+    fun setCycleEnabled(enabled: Boolean)
+    fun setCycleSteps(steps: List<CycleStep>)
     fun setLowBatteryStop(enabled: Boolean)
     fun setLowBatteryPercent(percent: Int)
     fun setStopOnBatterySaver(enabled: Boolean)
@@ -76,6 +79,7 @@ fun MainScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var editing by rememberSaveable { mutableStateOf<DurationSetting?>(null) }
     var editingBatteryLevel by rememberSaveable { mutableStateOf(false) }
+    var editingCycleSteps by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = { LargeTopAppBar(title = { Text(stringResource(R.string.app_name)) }, scrollBehavior = scrollBehavior) },
@@ -109,6 +113,8 @@ fun MainScreen(
                 StartTimerCard(state, actions, elapsedNow)
                 SectionHeader(R.string.section_durations)
                 DurationsCard(state, onEdit = { editing = it })
+                SectionHeader(R.string.section_shortcuts)
+                ShortcutsCard(state, actions, onEditSteps = { editingCycleSteps = true })
                 SectionHeader(R.string.section_behavior)
                 BehaviorCard(state, actions, onAllowOverlay)
                 SectionHeader(R.string.section_battery)
@@ -131,6 +137,16 @@ fun MainScreen(
             onConfirm = {
                 actions.setMinutes(setting, it)
                 editing = null
+            },
+        )
+    }
+    if (editingCycleSteps) {
+        CycleStepsDialog(
+            initial = state.settings.cycleSteps,
+            onDismiss = { editingCycleSteps = false },
+            onConfirm = {
+                actions.setCycleSteps(it)
+                editingCycleSteps = false
             },
         )
     }
@@ -158,6 +174,8 @@ private object PreviewActions : MainActions {
     override fun setDynamicColor(enabled: Boolean) = Unit
     override fun setAutomationEnabled(enabled: Boolean) = Unit
     override fun setStopOnScreenOff(enabled: Boolean) = Unit
+    override fun setCycleEnabled(enabled: Boolean) = Unit
+    override fun setCycleSteps(steps: List<CycleStep>) = Unit
     override fun setLowBatteryStop(enabled: Boolean) = Unit
     override fun setLowBatteryPercent(percent: Int) = Unit
     override fun setStopOnBatterySaver(enabled: Boolean) = Unit

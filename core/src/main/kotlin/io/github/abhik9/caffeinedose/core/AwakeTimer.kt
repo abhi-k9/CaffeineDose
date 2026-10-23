@@ -1,6 +1,7 @@
 package io.github.abhik9.caffeinedose.core
 
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /** Outcome of an operation that (re)starts the timer. */
 sealed interface StartResult {
@@ -104,6 +105,28 @@ class AwakeTimer(
     } else {
         stop()
         StartResult.Stopped
+    }
+
+    /**
+     * What a tap on a shortcut (Quick Settings tile, home screen widget) does: toggles the default timer, or steps
+     * through [TimerSettings.cycle] when set, see [nextCycleStep].
+     */
+    fun tap(): StartResult {
+        val steps = settings().cycle
+        if (steps.isEmpty()) return toggle()
+        val running = current()
+        val next = nextCycleStep(steps, running, running?.remaining(clock) ?: Duration.ZERO, power.isPluggedIn())
+        log.record { "tap: next step $next" }
+        return when (next) {
+            null -> {
+                stop()
+                StartResult.Stopped
+            }
+
+            is CycleStep.Minutes -> start(next.minutes.minutes)
+
+            CycleStep.WhileCharging -> startUntilUnplugged()
+        }
     }
 
     /**
