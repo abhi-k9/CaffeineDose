@@ -27,6 +27,7 @@ import io.github.abhik9.caffeinedose.core.Requirement
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import io.github.abhik9.caffeinedose.settings.SettingsStore
 import io.github.abhik9.caffeinedose.settings.ThemeMode
+import io.github.abhik9.caffeinedose.shortcut.LauncherShortcuts
 import io.github.abhik9.caffeinedose.system.overlaySettingsIntent
 import io.github.abhik9.caffeinedose.system.settingsIntent
 import io.github.abhik9.caffeinedose.system.startSettings
@@ -65,6 +66,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applySystemBars(SettingsStore.from(this).themeMode)
+        // Also follows a language change, which recreates the activity.
+        LauncherShortcuts.publish(this)
         setContent {
             val state by viewModel.state.collectAsStateWithLifecycle()
             val themeMode = state.settings.themeMode

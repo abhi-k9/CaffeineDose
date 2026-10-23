@@ -5,6 +5,6 @@
     <color name="widget_on_content">#FF6D3A09</color>
     <color name="widget_off_background">#FFF5E5DC</color>
     <color name="widget_off_content">#FF52443B</color>
-    <!-- Preview in the widget picker before Android 12: one image for both themes, under a white icon. -->
-    <color name="widget_preview_background">#FF895020</color>
+    <!-- Under the white icon of the launcher shortcuts, and of the widget preview before Android 12: for both themes. -->
+    <color name="icon_background">#FF895020</color>
 </resources>

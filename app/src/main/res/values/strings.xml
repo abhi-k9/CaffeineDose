@@ -24,6 +24,7 @@
     <string name="action_start">Keep awake for %1$s</string>
     <string name="action_set">Set to %1$s</string>
     <string name="action_start_while_charging">Keep awake while charging</string>
+    <string name="shortcut_stop">Let the screen turn off</string>
 
     <!-- Main screen -->
     <string name="timer_idle_title">Screen timeout is normal</string>

@@ -3,7 +3,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/widget_preview_background" />
+            <solid android:color="@color/icon_background" />
             <corners android:radius="16dp" />
             <size
                 android:width="72dp"

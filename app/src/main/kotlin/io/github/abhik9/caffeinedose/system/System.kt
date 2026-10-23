@@ -3,6 +3,9 @@ package io.github.abhik9.caffeinedose.system
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.icu.text.MeasureFormat
+import android.icu.util.Measure
+import android.icu.util.MeasureUnit
 import android.provider.Settings
 import android.text.format.DateFormat
 import android.widget.Toast
@@ -15,6 +18,7 @@ import io.github.abhik9.caffeinedose.core.StartResult
 import io.github.abhik9.caffeinedose.core.Timer
 import io.github.abhik9.caffeinedose.diagnostics.diagnostics
 import java.util.Date
+import java.util.Locale
 
 /** Where the user can resolve a [Requirement]. */
 fun Context.settingsIntent(requirement: Requirement): Intent = when (requirement) {
@@ -54,6 +58,18 @@ val Requirement.explanation: Int
     get() = when (this) {
         Requirement.NOTIFICATIONS -> R.string.requirement_notifications_explanation
     }
+
+/** A duration in whole minutes, localized by ICU, e.g. "1 hr, 30 min". */
+fun durationText(locale: Locale, minutes: Int): String {
+    val format = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT)
+    val hours = minutes / 60
+    val rest = minutes % 60
+    return when {
+        hours == 0 -> format.format(Measure(rest, MeasureUnit.MINUTE))
+        rest == 0 -> format.format(Measure(hours, MeasureUnit.HOUR))
+        else -> format.formatMeasures(Measure(hours, MeasureUnit.HOUR), Measure(rest, MeasureUnit.MINUTE))
+    }
+}
 
 /** When [timer] ends, in the user's time format (12 or 24 hours). */
 fun Context.endTime(timer: Timer): String = DateFormat.getTimeFormat(this).format(Date(timer.endsAt))

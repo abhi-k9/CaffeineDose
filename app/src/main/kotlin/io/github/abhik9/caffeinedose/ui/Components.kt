@@ -1,9 +1,6 @@
 package io.github.abhik9.caffeinedose.ui
 
-import android.icu.text.MeasureFormat
 import android.icu.text.NumberFormat
-import android.icu.util.Measure
-import android.icu.util.MeasureUnit
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -28,6 +25,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.abhik9.caffeinedose.R
+import io.github.abhik9.caffeinedose.system.durationText
 
 @Composable
 internal fun SectionHeader(@StringRes title: Int, modifier: Modifier = Modifier) = Text(
@@ -79,18 +77,9 @@ internal fun formatPercent(percent: Int): String {
     return remember(locale, percent) { NumberFormat.getPercentInstance(locale).format(percent / 100.0) }
 }
 
-/**
- * A duration in whole minutes, localized by ICU, e.g. "1 hr, 30 min".
- */
+/** A duration in whole minutes, localized, e.g. "1 hr, 30 min": see [durationText]. */
 @Composable
 internal fun formatMinutes(minutes: Int): String {
     val locale = LocalConfiguration.current.locales[0]
-    val format = remember(locale) { MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT) }
-    val hours = minutes / 60
-    val rest = minutes % 60
-    return when {
-        hours == 0 -> format.format(Measure(rest, MeasureUnit.MINUTE))
-        rest == 0 -> format.format(Measure(hours, MeasureUnit.HOUR))
-        else -> format.formatMeasures(Measure(hours, MeasureUnit.HOUR), Measure(rest, MeasureUnit.MINUTE))
-    }
+    return remember(locale, minutes) { durationText(locale, minutes) }
 }
