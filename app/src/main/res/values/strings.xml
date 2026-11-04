@@ -15,7 +15,7 @@
     <!-- Notification -->
     <string name="notification_channel_name">Screen kept on</string>
     <string name="notification_channel_description">Shows how long the screen stays on, and lets you extend, reduce or stop it.</string>
-    <string name="notification_title">Screen stays on</string>
+    <string name="notification_title">Screen on</string>
 
     <!-- Timer actions -->
     <string name="action_extend">+%1$d min</string>

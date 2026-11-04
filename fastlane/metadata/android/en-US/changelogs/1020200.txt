@@ -1,0 +1,1 @@
+Shortened the notification title to give the countdown more room while keeping Live Updates.
